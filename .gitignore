@@ -3,3 +3,14 @@ __pycache__/
 .ipynb_checkpoints/
 Dataset/
 *.zip
+
+node_modules/
+.env
+
+logs/
+*.log
+
+.vscode/
+
+.DS_Store
+Thumbs.db
