@@ -8,19 +8,20 @@ import time
 import platform
 import random
 from datetime import datetime, timezone
-import wmi
+
+# Optional WMI for Windows
+try:
+    import wmi
+except ImportError:
+    wmi = None
 
 API_URL = "http://localhost:5000/api/telemetry"
-
 
 def get_battery_health():
     # macOS battery health
     if platform.system() == "Darwin":
         try:
-            output = subprocess.check_output(
-                ["system_profiler", "SPPowerDataType"],
-                text=True
-            )
+            output = subprocess.check_output(["system_profiler", "SPPowerDataType"], text=True)
             match = re.search(r"Maximum Capacity:\s*(\d+)%", output)
             if match:
                 return int(match.group(1))
@@ -34,25 +35,48 @@ def get_battery_health():
             return round(bat.percent)
     except:
         pass
-
     return 0
 
-
 def get_hardware_info():
-    c = wmi.WMI()
+    if platform.system() == "Windows" and wmi is not None:
+        c = wmi.WMI()
+        system = c.Win32_ComputerSystem()[0]
+        processor = c.Win32_Processor()[0]
+        disk = c.Win32_DiskDrive()[0]
+        os_info = c.Win32_OperatingSystem()[0]
 
-    system = c.Win32_ComputerSystem()[0]
-    processor = c.Win32_Processor()[0]
-    disk = c.Win32_DiskDrive()[0]
-    os_info = c.Win32_OperatingSystem()[0]
-
+        return {
+            "manufacturer": system.Manufacturer,
+            "model": system.Model,
+            "cpu": processor.Name.strip(),
+            "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
+            "storage": f"{round(int(disk.Size) / (1024 ** 3))} GB",
+            "os": os_info.Caption
+        }
+    elif platform.system() == "Darwin": # macOS
+        try:
+            cpu = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
+            model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
+            os_ver = subprocess.check_output(["sw_vers", "-productVersion"], text=True).strip()
+            return {
+                "manufacturer": "Apple",
+                "model": model,
+                "cpu": cpu,
+                "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
+                "storage": "Apple SSD",
+                "os": f"macOS {os_ver}"
+            }
+        except:
+            pass
+            
+    # Fallback for Linux/Others
     return {
-        "manufacturer": system.Manufacturer,
-        "model": system.Model,
-        "cpu": processor.Name.strip(),
+        "manufacturer": "Unknown",
+        "model": "Generic Device",
+        "cpu": platform.processor() or "Unknown CPU",
         "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
-        "storage": f"{round(int(disk.Size) / (1024 ** 3))} GB",
-        "os": os_info.Caption
+        "storage": "Unknown SSD",
+        "os": f"{platform.system()} {platform.release()}"
     }
 
 
