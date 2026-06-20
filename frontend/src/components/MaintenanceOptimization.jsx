@@ -3,56 +3,91 @@ import { Calendar, Clock, Wrench, CheckCircle, AlertTriangle, ShieldCheck, Play,
 
 export default function MaintenanceOptimization({ devices }) {
   // Configuration for Maintenance Windows
-  const [windowDay, setWindowDay] = useState('Sunday');
-  const [windowTime, setWindowTime] = useState('02:00');
-  const [windowDuration, setWindowDuration] = useState('4'); // 4 hours
+  const [windowDay, setWindowDay] = useState(localStorage.getItem('maint_day') || 'Sunday');
+  const [windowTime, setWindowTime] = useState(localStorage.getItem('maint_time') || '02:00');
+  const [windowDuration, setWindowDuration] = useState(localStorage.getItem('maint_duration') || '4');
   const [isSaved, setIsSaved] = useState(false);
+  const [isAutoEnabled, setIsAutoEnabled] = useState(localStorage.getItem('maint_auto') !== 'false');
+  const [executingTaskId, setExecutingTaskId] = useState(null);
 
   // Mock historical logs
-  const [logs, setLogs] = useState([
-    {
-      id: 'log-1',
-      deviceId: 'dev-101',
-      hostname: 'WS-DELL-PRO',
-      component: 'CPU Fan',
-      action: 'Replaced failing cooling fan & reapplied thermal paste.',
-      technician: 'Sarah Connor (Senior Hardware Eng.)',
-      date: '2026-06-10',
-      status: 'success'
-    },
-    {
-      id: 'log-2',
-      deviceId: 'dev-102',
-      hostname: 'MAC-BOOK-M3',
-      component: 'Battery',
-      action: 'Replaced battery pack (health was 38%). Run diagnostic cycle.',
-      technician: 'John Doe (Lead Diagnostics Eng.)',
-      date: '2026-06-15',
-      status: 'success'
-    },
-    {
-      id: 'log-3',
-      deviceId: 'dev-103',
-      hostname: 'THINKPAD-X1',
-      component: 'SSD Disk',
-      action: 'System files migration to new NVMe SSD drive.',
-      technician: 'Automated System Optimizer',
-      date: '2026-06-18',
-      status: 'success'
-    }
-  ]);
+  const [logs, setLogs] = useState(() => {
+    const savedLogs = localStorage.getItem('maint_logs');
+    if (savedLogs) return JSON.parse(savedLogs);
+    return [
+      {
+        id: 'log-1',
+        deviceId: 'dev-101',
+        hostname: 'WS-DELL-PRO',
+        component: 'CPU Fan',
+        action: 'Replaced failing cooling fan & reapplied thermal paste.',
+        technician: 'Sarah Connor (Senior Hardware Eng.)',
+        date: '2026-06-10',
+        status: 'success'
+      },
+      {
+        id: 'log-2',
+        deviceId: 'dev-102',
+        hostname: 'MAC-BOOK-M3',
+        component: 'Battery',
+        action: 'Replaced battery pack (health was 38%). Run diagnostic cycle.',
+        technician: 'John Doe (Lead Diagnostics Eng.)',
+        date: '2026-06-15',
+        status: 'success'
+      },
+      {
+        id: 'log-3',
+        deviceId: 'dev-103',
+        hostname: 'THINKPAD-X1',
+        component: 'SSD Disk',
+        action: 'System files migration to new NVMe SSD drive.',
+        technician: 'Automated System Optimizer',
+        date: '2026-06-18',
+        status: 'success'
+      }
+    ];
+  });
 
   const saveConfiguration = (e) => {
     e.preventDefault();
+    localStorage.setItem('maint_day', windowDay);
+    localStorage.setItem('maint_time', windowTime);
+    localStorage.setItem('maint_duration', windowDuration);
+    localStorage.setItem('maint_auto', isAutoEnabled);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
 
   // Automated Scheduler Logic
-  // Filter devices that need repair (warning or critical risk level)
-  const devicesNeedingMaintenance = devices
-    ? devices.filter(d => d.latestPrediction && (d.latestPrediction.riskLevel === 'critical' || d.latestPrediction.riskLevel === 'warning'))
-    : [];
+  // Filter devices that need repair (warning or critical risk level) AND haven't been "fixed" yet
+  // We use logs to simulate fixing. If a device has a log entry today, we consider it fixed temporarily for the demo
+  
+  const demoDevices = [
+    {
+      deviceId: 'demo-storage-01',
+      hostname: 'DB-CLUSTER-NODE4',
+      latestPrediction: { riskLevel: 'critical', predictedComponent: 'NVMe SSD', failureProbability: 92, healthScore: 8 }
+    },
+    {
+      deviceId: 'demo-cooling-02',
+      hostname: 'RENDER-FARM-B1',
+      latestPrediction: { riskLevel: 'warning', predictedComponent: 'GPU Cooling Fan', failureProbability: 76, healthScore: 24 }
+    },
+    {
+      deviceId: 'demo-power-03',
+      hostname: 'EXEC-LAPTOP-M2',
+      latestPrediction: { riskLevel: 'warning', predictedComponent: 'Battery Cell 3', failureProbability: 64, healthScore: 36 }
+    }
+  ];
+
+  const combinedDevices = [...(devices || []), ...demoDevices];
+
+  const devicesNeedingMaintenance = combinedDevices.filter(d => {
+        if (!d.latestPrediction || (d.latestPrediction.riskLevel !== 'critical' && d.latestPrediction.riskLevel !== 'warning')) return false;
+        // Check if we just simulated fixing this device
+        const isFixed = logs.some(log => log.deviceId === d.deviceId && log.id.startsWith('sim-'));
+        return !isFixed;
+      });
 
   // Sort them so Critical is scheduled before Warning
   const sortedMaintenanceQueue = [...devicesNeedingMaintenance].sort((a, b) => {
@@ -72,9 +107,27 @@ export default function MaintenanceOptimization({ devices }) {
       const isCritical = device.latestPrediction.riskLevel === 'critical';
       const slotTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
       
-      // Increment slot by 45 minutes for next device
-      currentMinute += 45;
-      if (currentMinute >= 60) {
+      const comp = (device.latestPrediction.predictedComponent || '').toLowerCase();
+      let durationMins = 45;
+      let durationStr = '45 mins';
+      
+      if (comp.includes('ssd') || comp.includes('disk') || comp.includes('storage')) {
+        durationMins = 90;
+        durationStr = '1h 30m';
+      } else if (comp.includes('battery') || comp.includes('power')) {
+        durationMins = 30;
+        durationStr = '30 mins';
+      } else if (comp.includes('fan') || comp.includes('cooling')) {
+        durationMins = 45;
+        durationStr = '45 mins';
+      } else {
+        durationMins = 60;
+        durationStr = '1h 00m';
+      }
+      
+      // Increment slot by duration for next device
+      currentMinute += durationMins;
+      while (currentMinute >= 60) {
         currentHour += 1;
         currentMinute -= 60;
       }
@@ -88,12 +141,43 @@ export default function MaintenanceOptimization({ devices }) {
         scheduledDay: `Next ${windowDay}`,
         scheduledTime: slotTime,
         priority: isCritical ? 'CRITICAL (Tier-1)' : 'NORMAL (Tier-2)',
-        duration: '45 mins'
+        duration: durationStr
       };
     });
   };
 
-  const scheduledTasks = getScheduledSlots();
+  const scheduledTasks = isAutoEnabled ? getScheduledSlots() : [];
+
+  // Simulate executing a scheduled task
+  const executeMaintenance = (task) => {
+    if (executingTaskId) return; // Prevent multiple clicks
+    setExecutingTaskId(task.deviceId);
+
+    // Simulate real-world mitigation delay (permissions, data backup, dispatch)
+    setTimeout(() => {
+      const isStorage = task.component?.toLowerCase().includes('disk') || task.component?.toLowerCase().includes('ssd') || task.component?.toLowerCase().includes('storage');
+      
+      const actionText = isStorage 
+        ? `Automated emergency data backup completed. Maintenance ticket dispatched to IT team for physical ${task.component} replacement.`
+        : `Automated power/thermal throttle applied to prevent failure. Hardware ticket dispatched to IT for physical ${task.component} replacement.`;
+
+      const newLog = {
+        id: `sim-${Date.now()}`,
+        deviceId: task.deviceId,
+        hostname: task.hostname,
+        component: task.component,
+        action: actionText,
+        technician: 'PredictX Auto-Scheduler (Level 1)',
+        date: new Date().toISOString().split('T')[0],
+        status: 'success'
+      };
+      
+      const updatedLogs = [newLog, ...logs];
+      setLogs(updatedLogs);
+      localStorage.setItem('maint_logs', JSON.stringify(updatedLogs));
+      setExecutingTaskId(null);
+    }, 2500); // 2.5 second simulated processing delay
+  };
 
   return (
     <div className="content-view">
@@ -193,7 +277,9 @@ export default function MaintenanceOptimization({ devices }) {
                   <label>maintenance day</label>
                   <select value={windowDay} onChange={(e) => setWindowDay(e.target.value)}>
                     <option value="Monday">monday</option>
+                    <option value="Tuesday">tuesday</option>
                     <option value="Wednesday">wednesday</option>
+                    <option value="Thursday">thursday</option>
                     <option value="Friday">friday</option>
                     <option value="Saturday">saturday</option>
                     <option value="Sunday">sunday</option>
@@ -206,6 +292,23 @@ export default function MaintenanceOptimization({ devices }) {
                     value={windowTime} 
                     onChange={(e) => setWindowTime(e.target.value)} 
                   />
+                </div>
+              </div>
+              
+              <div className="form-row" style={{ marginTop: '16px', marginBottom: '16px' }}>
+                <div className="form-group" style={{ width: '100%' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={isAutoEnabled} 
+                      onChange={(e) => setIsAutoEnabled(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }} 
+                    />
+                    <span style={{ color: '#fff', fontWeight: 600 }}>Enable Auto-Scheduling for Critical/High Risks</span>
+                  </label>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
+                    When devices hit a {'>'}70% failure probability, an automated ticket is generated for repair within the 7-30 day window.
+                  </p>
                 </div>
               </div>
               <div className="form-row">
@@ -246,6 +349,7 @@ export default function MaintenanceOptimization({ devices }) {
                       <th>priority</th>
                       <th>window slot</th>
                       <th>estimated time</th>
+                      <th>action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -256,7 +360,7 @@ export default function MaintenanceOptimization({ devices }) {
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>id: {task.deviceId}</span>
                         </td>
                         <td>
-                          <span style={{ color: 'var(--color-danger)', fontWeight: 600, textTransform: 'lowercase' }}>{task.component.toLowerCase()}</span> repair
+                          <span style={{ color: 'var(--color-danger)', fontWeight: 600, textTransform: 'lowercase' }}>{task.component?.toLowerCase() || 'system'}</span> repair
                         </td>
                         <td>
                           <span className={`badge ${task.riskLevel}`} style={{ padding: '2px 8px', fontSize: '0.7rem', textTransform: 'lowercase' }}>
@@ -271,6 +375,36 @@ export default function MaintenanceOptimization({ devices }) {
                         </td>
                         <td>
                           <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>{task.duration}</span>
+                        </td>
+                        <td>
+                          <button 
+                            onClick={() => executeMaintenance(task)}
+                            disabled={executingTaskId !== null}
+                            style={{ 
+                              background: executingTaskId === task.deviceId ? 'var(--color-warning)' : 'var(--color-success)', 
+                              border: 'none', 
+                              color: '#000', 
+                              padding: '4px 10px', 
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              cursor: executingTaskId !== null ? 'wait' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              opacity: executingTaskId !== null && executingTaskId !== task.deviceId ? 0.4 : 1
+                            }}
+                          >
+                            {executingTaskId === task.deviceId ? (
+                              <>
+                                <Activity size={12} /> resolving...
+                              </>
+                            ) : (
+                              <>
+                                <Play size={12} /> execute
+                              </>
+                            )}
+                          </button>
                         </td>
                       </tr>
                     ))}

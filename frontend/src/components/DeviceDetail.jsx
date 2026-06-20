@@ -432,9 +432,18 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                   ml_assessment :: {risk === 'critical' ? 'urgent_failure_risk' : risk === 'warning' ? 'degraded_performance_warning' : 'system_healthy'}
                 </span>
               </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '12px', textTransform: 'lowercase' }}>
-                root_cause: <span style={{ color: 'var(--text-primary)' }}>{latestPrediction.rootCause?.toLowerCase() || 'no issues detected.'}</span>
-              </p>
+              <div style={{ background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '6px', marginBottom: '16px', borderLeft: '2px solid var(--color-primary)' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', fontWeight: 'bold' }}>
+                  <HelpCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
+                  explainable_ai_insight
+                </p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '8px', textTransform: 'lowercase', lineHeight: '1.4' }}>
+                  root_cause: <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{latestPrediction.rootCause?.toLowerCase() || 'no issues detected.'}</span>
+                </p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'none', fontStyle: 'italic', lineHeight: '1.4' }}>
+                  "Risk score of {latestPrediction.healthScore} generated due to {latestPrediction.rootCause?.toLowerCase() || 'normal operational patterns'}. The ML model detected anomalous telemetry correlated with {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' ? latestPrediction.predictedComponent.toLowerCase() : 'system'} degradation."
+                </p>
+              </div>
               {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' && (
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'lowercase' }}>
                   component: <span style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 'bold' }}>{latestPrediction.predictedComponent.toLowerCase()}</span>
