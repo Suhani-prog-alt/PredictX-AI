@@ -609,11 +609,27 @@ a {
 }
 
 .spec-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  align-items: start;
   padding: 12px 0;
   border-bottom: 1px solid var(--border-color);
   font-size: 0.9rem;
+}
+
+.spec-item span:first-child {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.spec-item span:last-child {
+  color: #fff;
+  text-align: right;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 
 .spec-item span:first-child {
