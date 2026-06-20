@@ -37,9 +37,11 @@ const getPrediction = async (telemetry) => {
             // Map python risk level (Low, Moderate, High, Critical) to backend (low, warning, critical)
             let mappedRisk = "low";
             const pythonRisk = (diag.risk_level || "Low").toLowerCase();
-            if (pythonRisk === "critical") {
+            const healthScore = Math.round(diag.health_score);
+
+            if (pythonRisk === "critical" || healthScore <= 30) {
                 mappedRisk = "critical";
-            } else if (pythonRisk === "high") {
+            } else if (pythonRisk === "high" || pythonRisk === "moderate" || healthScore <= 60) {
                 mappedRisk = "warning";
             } else {
                 mappedRisk = "low";
@@ -47,12 +49,12 @@ const getPrediction = async (telemetry) => {
              
 
             return {
-                healthScore: Math.round(diag.health_score),
-                failureProbability: Math.round(diag.failure_probability_percent),
+                healthScore: healthScore,
+                failureProbability: Math.round(diag.failure_probability),
                 riskLevel: mappedRisk,
-                predictedComponent: diag.predicted_component,
-                rootCause: diag.root_cause,
-                estimatedFailureWindow: diag.estimated_failure_window
+                predictedComponent: diag.predicted_component || "Unknown",
+                rootCause: diag.root_cause || "Analyzing telemetry anomalies...",
+                estimatedFailureWindow: diag.estimated_failure_window || "Unknown",
             };
         }
     } catch (error) {
