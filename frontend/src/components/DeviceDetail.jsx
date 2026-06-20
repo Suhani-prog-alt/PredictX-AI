@@ -71,31 +71,28 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
 
   // Handle incoming real-time telemetry from Server-Sent Events stream
   useEffect(() => {
-    if (latestUpdate && latestUpdate.deviceId === deviceId && data) {
-      setData(prev => {
-        if (!prev) return prev;
+    if (!latestUpdate || latestUpdate.deviceId !== deviceId || !data) return;
+    if (!latestUpdate.telemetry || !latestUpdate.prediction) return;
 
-        // Prevent duplicate updates (e.g. if the timestamp is already present)
-        const telemetryExists = prev.recentTelemetry.some(t => 
-          (t._id && t._id === latestUpdate.telemetry._id) || 
-          t.timestamp === latestUpdate.telemetry.timestamp
-        );
-        if (telemetryExists) return prev;
+    setData(prev => {
+      if (!prev) return prev;
 
-        console.log(`[DeviceDetail] Appending live telemetry packet for ${deviceId}:`, latestUpdate);
-        
-        // Push new telemetry and prediction to front, maintaining limit of 10 points
-        const newTelemetry = [latestUpdate.telemetry, ...prev.recentTelemetry].slice(0, 10);
-        const newPredictions = [latestUpdate.prediction, ...prev.recentPredictions].slice(0, 10);
+      const telemetryExists = (prev.recentTelemetry || []).some(t =>
+        (t._id && t._id === latestUpdate.telemetry._id) ||
+        t.timestamp === latestUpdate.telemetry.timestamp
+      );
+      if (telemetryExists) return prev;
 
-        return {
-          ...prev,
-          recentTelemetry: newTelemetry,
-          recentPredictions: newPredictions,
-          latestPrediction: latestUpdate.prediction
-        };
-      });
-    }
+      const newTelemetry = [latestUpdate.telemetry, ...(prev.recentTelemetry || [])].slice(0, 10);
+      const newPredictions = [latestUpdate.prediction, ...(prev.recentPredictions || [])].slice(0, 10);
+
+      return {
+        ...prev,
+        recentTelemetry: newTelemetry,
+        recentPredictions: newPredictions,
+        latestPrediction: latestUpdate.prediction
+      };
+    });
   }, [latestUpdate, deviceId]);
 
   if (loading) {
@@ -163,10 +160,10 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
   const { device, recentTelemetry, recentPredictions, latestPrediction } = data;
 
   // Format line charts data
-  const sortedTelemetry = recentTelemetry ? [...recentTelemetry].reverse() : [];
+  const sortedTelemetry = (recentTelemetry && recentTelemetry.length > 0) ? [...recentTelemetry].reverse() : [];
   const timestamps = sortedTelemetry.map(t => new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
-  const sortedPredictions = recentPredictions ? [...recentPredictions].reverse() : [];
+  const sortedPredictions = (recentPredictions && recentPredictions.length > 0) ? [...recentPredictions].reverse() : [];
   const predictionTimestamps = sortedPredictions.map(p => new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
   const performanceChartData = {

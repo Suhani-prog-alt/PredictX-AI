@@ -141,13 +141,22 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
               </div>
 
               <div className="alert-action-side">
-                <button 
-                  className={`btn ${alert.type === 'info' ? 'btn-secondary' : 'btn-primary'}`}
-                  style={{ whiteSpace: 'nowrap', padding: '10px 20px' }}
-                  onClick={() => handleAction(alert.action, alert.deviceId)}
-                >
-                  {alert.action}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                  <button 
+                    className={`btn ${alert.type === 'info' ? 'btn-secondary' : 'btn-primary'}`}
+                    style={{ whiteSpace: 'nowrap', padding: '10px 20px' }}
+                    onClick={() => handleAction(alert.action, alert.deviceId)}
+                  >
+                    {alert.action}
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ whiteSpace: 'nowrap', padding: '8px 20px', fontSize: '0.8rem' }}
+                    onClick={() => { setSelectedDeviceId(alert.deviceId); setView('devices'); }}
+                  >
+                    View Device
+                  </button>
+                </div>
               </div>
             </div>
           ))
