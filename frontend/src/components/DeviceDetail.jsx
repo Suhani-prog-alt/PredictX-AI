@@ -124,18 +124,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
     );
   }
 
-  // Helper to calculate Estimated Time to Failure
-  const getTimeToFailure = (probability, riskLevel) => {
-    if (riskLevel === 'critical' || probability >= 80) {
-      if (probability >= 95) return 'Immediate (< 24 hours)';
-      if (probability >= 90) return 'Immediate (< 3 days)';
-      return '3-7 days';
-    }
-    if (riskLevel === 'warning' || probability >= 50) {
-      return '7-30 days';
-    }
-    return 'Stable (> 90 days)';
-  };
+
 
   const getMetricStatus = (key, val) => {
     if (val === undefined || val === null) return 'normal';
@@ -383,7 +372,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                     borderRadius: '2px',
                     textTransform: 'lowercase'
                   }}>
-                    ttf: {getTimeToFailure(latestPrediction.failureProbability, risk).toLowerCase()}
+                    ttf: {(latestPrediction.estimatedFailureWindow || 'Unknown').toLowerCase()}
                   </span>
                 </>
               )}
@@ -401,7 +390,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                   color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)',
                   textTransform: 'lowercase'
                 }}>
-                  {getTimeToFailure(latestPrediction.failureProbability, risk).toLowerCase()}
+                  {(latestPrediction.estimatedFailureWindow || 'Unknown').toLowerCase()}
                 </span>
               </div>
             )}
@@ -487,7 +476,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                   <span className="w-value">{current.ramUsage}%</span>
                 </div>
                 <div className={`widget-card ${getMetricStatus('diskUsage', current.diskUsage)}`} style={{ background: `linear-gradient(to right, rgba(240, 74, 74, 0.2) ${current.diskUsage}%, rgba(0,0,0,0.15) ${current.diskUsage}%)` }}>
-                  <span className="w-label">disk</span>
+                  <span className="w-label">storage_used</span>
                   <span className="w-value">{current.diskUsage}%</span>
                 </div>
                 <div className={`widget-card ${getMetricStatus('fanRpm', current.fanRpm)}`} style={{ background: `linear-gradient(to right, rgba(56, 189, 248, 0.2) ${Math.min((current.fanRpm / 6000) * 100, 100)}%, rgba(0,0,0,0.15) ${Math.min((current.fanRpm / 6000) * 100, 100)}%)` }}>

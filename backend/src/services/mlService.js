@@ -20,6 +20,9 @@ const getPrediction = async (telemetry) => {
         process_count: telemetry.processCount !== undefined ? Number(telemetry.processCount) : undefined,
         battery_health: telemetry.batteryHealth !== undefined ? Number(telemetry.batteryHealth) : undefined,
         cpu_temp: telemetry.cpuTemp !== undefined ? Number(telemetry.cpuTemp) : undefined,
+        cpu_usage: telemetry.cpuUsage !== undefined ? Number(telemetry.cpuUsage) : undefined,
+        ram_usage: telemetry.ramUsage !== undefined ? Number(telemetry.ramUsage) : undefined,
+        disk_usage: telemetry.diskUsage !== undefined ? Number(telemetry.diskUsage) : undefined,
         disk_type: telemetry.diskType || "SSD"
     };
 
@@ -45,7 +48,8 @@ const getPrediction = async (telemetry) => {
                 failureProbability: Math.round(diag.failure_probability_percent),
                 riskLevel: mappedRisk,
                 predictedComponent: diag.predicted_component,
-                rootCause: diag.root_cause
+                rootCause: diag.root_cause,
+                estimatedFailureWindow: diag.estimated_failure_window
             };
         }
     } catch (error) {
@@ -136,12 +140,18 @@ const getPrediction = async (telemetry) => {
         ? "All subsystems within normal operating parameters."
         : (rootCauseMap[worst.name] || "Multiple subsystems showing elevated risk.");
 
+    let estimatedFailureWindow = "Stable";
+    if (failureProbability >= 40) {
+        estimatedFailureWindow = "7 - 30 Days";
+    }
+
     return {
         healthScore,
         failureProbability,
         riskLevel,
         predictedComponent,
         rootCause,
+        estimatedFailureWindow,
     };
 };
 

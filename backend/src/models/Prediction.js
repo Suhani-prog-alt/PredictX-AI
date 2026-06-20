@@ -17,6 +17,8 @@ const predictionSchema = new mongoose.Schema({
 
     rootCause: String,
 
+    estimatedFailureWindow: String,
+
     recommendation: [String],
 
     timestamp: {

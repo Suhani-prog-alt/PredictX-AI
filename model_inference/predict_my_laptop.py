@@ -104,16 +104,16 @@ while True:
         # Using updated thresholds
         if fail_prob < 0.40:
             risk_level = "Low"
-            days_to_fail = "> 365 Days"
+            days_to_fail = "Stable"
         elif fail_prob < 0.70:
-            risk_level = "Moderate"
-            days_to_fail = "90 - 365 Days"
+            risk_level = "Warning"
+            days_to_fail = "7 - 30 Days"
         elif fail_prob < 0.95:
             risk_level = "High"
-            days_to_fail = "30 - 90 Days"
+            days_to_fail = "7 - 30 Days"
         else:
             risk_level = "Critical"
-            days_to_fail = "1 - 14 Days"
+            days_to_fail = "7 - 30 Days"
 
         root_cause = "Unknown"
         pred_component = "Unknown"

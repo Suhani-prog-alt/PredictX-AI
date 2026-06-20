@@ -156,7 +156,7 @@ function App() {
         currentView={currentView} 
         setView={(view) => {
           setView(view);
-          if (view !== 'devices') setSelectedDeviceId(null); // Reset detail view on route change
+          setSelectedDeviceId(null); // Reset detail view on any sidebar route change
         }}
         isCollapsed={sidebarCollapsed}
         setIsCollapsed={setSidebarCollapsed}

@@ -33,6 +33,9 @@ class TelemetryPayload(BaseModel):
     process_count: Optional[float] = None
     battery_health: Optional[float] = None
     cpu_temp: Optional[float] = None
+    cpu_usage: Optional[float] = None
+    ram_usage: Optional[float] = None
+    disk_usage: Optional[float] = None
     disk_type: Optional[str] = "SSD"
 
 def auto_detect_hardware():
@@ -86,11 +89,11 @@ def predict_hardware_health(payload: TelemetryPayload):
     input_data['cpuTemp'] = temp
 
     # Safe defaults
-    input_data['cpuUsage'] = psutil.cpu_percent()
+    input_data['cpuUsage'] = payload.cpu_usage if payload.cpu_usage is not None else psutil.cpu_percent()
     input_data['gpuUsage'] = 10.0
     input_data['gpuTemp'] = 50.0
-    input_data['ramUsage'] = 50.0
-    input_data['diskUsage'] = 60.0
+    input_data['ramUsage'] = payload.ram_usage if payload.ram_usage is not None else 50.0
+    input_data['diskUsage'] = payload.disk_usage if payload.disk_usage is not None else 60.0
     input_data['smartHealth'] = 90.0
     input_data['deviceAgeYears'] = np.nan 
     input_data['lastMaintenanceDays'] = 30.0
@@ -118,16 +121,16 @@ def predict_hardware_health(payload: TelemetryPayload):
 
     if fail_prob < 0.40:
         risk_level = "Low"
-        days_to_fail = "> 365 Days"
+        days_to_fail = "Stable"
     elif fail_prob < 0.70:
-        risk_level = "Moderate"
-        days_to_fail = "90 - 365 Days"
+        risk_level = "Warning"
+        days_to_fail = "7 - 30 Days"
     elif fail_prob < 0.95:
         risk_level = "High"
-        days_to_fail = "30 - 90 Days"
+        days_to_fail = "7 - 30 Days"
     else:
         risk_level = "Critical"
-        days_to_fail = "1 - 14 Days"
+        days_to_fail = "7 - 30 Days"
 
     root_cause = "Unknown"
     pred_component = "Unknown"

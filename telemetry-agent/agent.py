@@ -71,15 +71,17 @@ def collect_metrics():
 
     processCount = len(psutil.pids())
 
-    diskIO = psutil.disk_io_counters()
+    diskIO_start = psutil.disk_io_counters()
+    time.sleep(0.1)
+    diskIO_end = psutil.disk_io_counters()
 
     diskReadMBps = round(
-        diskIO.read_bytes / (1024 * 1024),
+        ((diskIO_end.read_bytes - diskIO_start.read_bytes) * 10) / (1024 * 1024),
         2
     )
 
     diskWriteMBps = round(
-        diskIO.write_bytes / (1024 * 1024),
+        ((diskIO_end.write_bytes - diskIO_start.write_bytes) * 10) / (1024 * 1024),
         2
     )
 

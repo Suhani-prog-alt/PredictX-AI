@@ -45,6 +45,7 @@ const receiveTelemetry = async (req, res) => {
             riskLevel: predictionResult.riskLevel,
             predictedComponent: predictionResult.predictedComponent,
             rootCause: predictionResult.rootCause,
+            estimatedFailureWindow: predictionResult.estimatedFailureWindow,
             recommendation: recommendations
         });
 
