@@ -16,29 +16,17 @@ const receiveTelemetry = async (req, res) => {
                 manufacturer: req.body.manufacturer || "Dell",
                 model: req.body.model || "Latitude 5420",
                 cpu: req.body.cpu || "Intel Core i5-1135G7",
-                ram: req.body.ram || "16GB DDR4",
+                ram: req.body.ram || (req.body.ramCapacityGB ? `${req.body.ramCapacityGB}GB` : "16GB DDR4"),
                 storage: req.body.storage || "512GB NVMe SSD",
-                os: req.body.os || "Windows 11 Pro"
+                os: req.body.os || req.body.osVersion || "Windows 11 Pro"
             });
         }
 
         // Save incoming telemetry
         const telemetry = await Telemetry.create(req.body);
 
-        // Send telemetry to ML model
-        const predictionResult = await getPrediction({
-            cpuUsage: req.body.cpuUsage,
-            cpuTemp: req.body.cpuTemp,
-            ramUsage: req.body.ramUsage,
-            diskUsage: req.body.diskUsage,
-            batteryHealth: req.body.batteryHealth,
-            cpuPower: req.body.cpuPower,
-            batteryPower: req.body.batteryPower,
-            fanRpm: req.body.fanRpm,
-            smartHealth: req.body.smartHealth,
-            gpuUsage: req.body.gpuUsage,
-            gpuTemp: req.body.gpuTemp
-        });
+        // Send telemetry to ML model (pass whole req.body to use additional ML features)
+        const predictionResult = await getPrediction(req.body);
 
         // Generate recommendations
         const recommendations = generateRecommendation(predictionResult);
@@ -53,6 +41,39 @@ const receiveTelemetry = async (req, res) => {
             rootCause: predictionResult.rootCause,
             recommendation: recommendations
         });
+
+        // ── Real-time Updates Broadcast via SSE ────────────────────────────
+        try {
+            const totalDevices = await Device.countDocuments();
+            const latestPredictions = await Prediction.aggregate([
+                { $sort: { timestamp: -1 } },
+                { $group: { _id: "$deviceId", latestPrediction: { $first: "$$ROOT" } } },
+                { $replaceRoot: { newRoot: "$latestPrediction" } }
+            ]);
+
+            const criticalDevices = latestPredictions.filter(p => p.riskLevel === "critical").length;
+            const warningDevices = latestPredictions.filter(p => p.riskLevel === "warning").length;
+            const healthyDevices = latestPredictions.filter(p => p.riskLevel === "low").length;
+
+            const summary = {
+                totalDevices,
+                criticalDevices,
+                warningDevices,
+                healthyDevices
+            };
+
+            const streamService = require("../services/streamService");
+            streamService.broadcast({
+                type: "TELEMETRY_UPDATE",
+                deviceId: req.body.deviceId,
+                device,
+                telemetry,
+                prediction,
+                summary
+            });
+        } catch (err) {
+            console.error("[Telemetry Controller] Failed to broadcast update:", err.message);
+        }
 
         res.status(201).json({
             message: "Telemetry processed successfully",

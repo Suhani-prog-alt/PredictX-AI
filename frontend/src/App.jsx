@@ -23,6 +23,7 @@ function App() {
   // Global Dashboard Data
   const [summary, setSummary] = useState(null);
   const [devices, setDevices] = useState([]);
+  const [latestUpdate, setLatestUpdate] = useState(null);
 
   // Fetch summary and devices list
   const fetchDashboardData = useCallback(async () => {
@@ -54,6 +55,68 @@ function App() {
     const interval = setInterval(fetchDashboardData, 8000); // refresh stats every 8 seconds
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
+
+  // Real-time updates via Server-Sent Events (SSE)
+  useEffect(() => {
+    if (!apiUrl) return;
+
+    const baseApi = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+    const sseUrl = `${baseApi}/dashboard/stream`;
+    console.log(`[SSE] Establishing live stream connection to ${sseUrl}...`);
+    
+    let eventSource;
+    try {
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'TELEMETRY_UPDATE') {
+            console.log('[SSE] Live update received:', data);
+            
+            // 1. Update latest update state for propagation
+            setLatestUpdate(data);
+
+            // 2. Update global summary counters
+            if (data.summary) {
+              setSummary(data.summary);
+            }
+
+            // 3. Update devices list in-place
+            setDevices(prevDevices => {
+              const updatedDevice = {
+                ...data.device,
+                latestPrediction: data.prediction
+              };
+              const exists = prevDevices.some(d => d.deviceId === data.deviceId);
+              if (exists) {
+                return prevDevices.map(d => d.deviceId === data.deviceId ? updatedDevice : d);
+              } else {
+                return [updatedDevice, ...prevDevices];
+              }
+            });
+            
+            setBackendOnline(true);
+          }
+        } catch (err) {
+          console.error('[SSE] Failed to parse stream event:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn('[SSE] EventSource encountered an error. It will auto-reconnect.', err);
+      };
+    } catch (err) {
+      console.error('[SSE] Failed to initialize EventSource:', err);
+    }
+
+    return () => {
+      if (eventSource) {
+        console.log('[SSE] Closing live stream connection.');
+        eventSource.close();
+      }
+    };
+  }, [apiUrl]);
 
   // Navigation title mapper
   const getViewTitle = () => {
@@ -158,6 +221,7 @@ function App() {
               deviceId={selectedDeviceId} 
               onBack={handleBackToList}
               apiUrl={apiUrl}
+              latestUpdate={latestUpdate}
             />
           ) : (
             <DeviceList 

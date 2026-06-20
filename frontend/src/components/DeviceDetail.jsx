@@ -36,7 +36,7 @@ ChartJS.register(
   Filler
 );
 
-export default function DeviceDetail({ deviceId, onBack, apiUrl }) {
+export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,6 +62,35 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl }) {
   useEffect(() => {
     fetchDeviceData();
   }, [fetchDeviceData]);
+
+  // Handle incoming real-time telemetry from Server-Sent Events stream
+  useEffect(() => {
+    if (latestUpdate && latestUpdate.deviceId === deviceId && data) {
+      setData(prev => {
+        if (!prev) return prev;
+
+        // Prevent duplicate updates (e.g. if the timestamp is already present)
+        const telemetryExists = prev.recentTelemetry.some(t => 
+          (t._id && t._id === latestUpdate.telemetry._id) || 
+          t.timestamp === latestUpdate.telemetry.timestamp
+        );
+        if (telemetryExists) return prev;
+
+        console.log(`[DeviceDetail] Appending live telemetry packet for ${deviceId}:`, latestUpdate);
+        
+        // Push new telemetry and prediction to front, maintaining limit of 10 points
+        const newTelemetry = [latestUpdate.telemetry, ...prev.recentTelemetry].slice(0, 10);
+        const newPredictions = [latestUpdate.prediction, ...prev.recentPredictions].slice(0, 10);
+
+        return {
+          ...prev,
+          recentTelemetry: newTelemetry,
+          recentPredictions: newPredictions,
+          latestPrediction: latestUpdate.prediction
+        };
+      });
+    }
+  }, [latestUpdate, deviceId]);
 
   if (loading) {
     return (
