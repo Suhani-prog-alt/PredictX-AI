@@ -42,14 +42,15 @@ X_org_b_res, y_org_b_res = smote.fit_resample(X_org_b, y_org_b)
 
 # 5. Local Training Phase
 print("\n==================================================")
-print("LOCAL TRAINING PHASE")
+print("LOCAL TRAINING Phase")
 print("==================================================")
+
 print("[Org A] Training local XGBoost model exclusively on Bank data...")
-model_a = XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
+model_a = XGBClassifier(n_estimators=300, max_depth=10, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
 model_a.fit(X_org_a_res, y_org_a_res)
 
 print("[Org B] Training local XGBoost model exclusively on Hospital data...")
-model_b = XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
+model_b = XGBClassifier(n_estimators=300, max_depth=10, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
 model_b.fit(X_org_b_res, y_org_b_res)
 
 # 6. Federated Aggregation Phase
