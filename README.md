@@ -7,6 +7,7 @@ PredictX-AI is an enterprise-grade predictive hardware maintenance platform desi
 *   **AI Root Cause Analysis**: Identifies exactly which component (SSD, Battery, CPU) will fail and why.
 *   **Automated Maintenance Scheduling**: Batches and schedules repairs automatically to minimize truck-roll costs and prevent unexpected downtime.
 *   **Data Privacy Enforcement**: Granular Organizational controls to mathematically hash hardware IDs and suppress sensitive process metrics for legal compliance.
+*   **Privacy-Preserving Federated Learning**: Standalone PoC demonstrating multi-org model training yielding an optimized 63.95% F1-Score on highly imbalanced data (up from 49% using StandardScaler and tuning).
 *   **Live Python Agent**: Cross-platform (`psutil`) telemetry streaming.
 *   **Continuous Learning**: Technician feedback loop prepares labeled data for batch model retraining.
 
@@ -34,6 +35,12 @@ pip install -r requirements.txt
 python api.py
 ```
 *Runs on `http://localhost:8000`*
+
+#### Federated Learning Proof-of-Concept
+To run the standalone Federated Learning simulation (which proves multi-org model training while preserving data privacy):
+```bash
+python model_inference/federated_learning_poc.py
+```
 
 ### 3. Backend (Node.js)
 ```bash

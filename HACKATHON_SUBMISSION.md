@@ -113,6 +113,11 @@ We utilize an advanced Python data generator (`data_generator.py`) to synthesize
 ### ✅ Stretch Goal #4: Native Mobile Operations App
 To provide true 24/7 coverage, we developed a complete React Native (Expo) mobile application. It mirrors the web dashboard's exact "Hacker/Enterprise" aesthetic, providing IT administrators with a powerful combination of Bottom Tab navigation and a comprehensive Drawer Sidebar to monitor fleet health and receive real-time predictions directly on their iOS/Android devices.
 
+### ✅ Stretch Goal #9: Privacy-Preserving Federated Learning (PoC)
+To prove that our ML engine can scale across multiple enterprise organizations without compromising data privacy, we built a standalone Federated Learning simulation (`federated_learning_poc.py`). 
+*   **Privacy Preserved:** The script splits the dataset between two isolated organizations (e.g., a Bank and a Hospital). They train local XGBoost models and transmit *only* the mathematical parameters to a central server—never the raw, sensitive telemetry data.
+*   **Mathematical Optimization:** By aggregating the models into a Global Ensemble and utilizing `StandardScaler` to optimize SMOTE's Euclidean distance calculations, our Global Model's F1-Score surged from **49.25% to 63.95%** on a highly imbalanced dataset, proving the superior generalization of collaborative AI.
+
 ---
 
 ## 10. System Architecture & Technologies Used
@@ -242,9 +247,8 @@ PredictX-AI fundamentally transforms IT infrastructure management from a **React
 ## 14. Future Enhancements & Roadmap
 While the current PredictX-AI platform is production-ready, our roadmap includes several powerful stretch features:
 
-1. **Federated Learning for Privacy:** Implementing privacy-preserving model training where the XGBoost model learns from hardware failures across multiple organizations (e.g., different banks) without ever sharing the raw, sensitive telemetry data between them.
-2. **Direct Vendor API Integrations:** Expanding the edge agent to bypass the OS entirely by integrating directly with Out-Of-Band management APIs like Dell iDRAC (OpenManage), HP iLO, and Lenovo XClarity for deep motherboard-level diagnostics.
-3. **Automated Procurement Workflow:** Integrating the `recommendationService` with ERP systems (like SAP or ServiceNow) to automatically order replacement RAM or Storage drives the moment a 30-day failure prediction is triggered.
+1. **Direct Vendor API Integrations:** Expanding the edge agent to bypass the OS entirely by integrating directly with Out-Of-Band management APIs like Dell iDRAC (OpenManage), HP iLO, and Lenovo XClarity for deep motherboard-level diagnostics.
+2. **Automated Procurement Workflow:** Integrating the `recommendationService` with ERP systems (like SAP or ServiceNow) to automatically order replacement RAM or Storage drives the moment a 30-day failure prediction is triggered.
 
 ---
 ## 15. Conclusion

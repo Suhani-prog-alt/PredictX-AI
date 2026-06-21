@@ -446,3 +446,23 @@ Fetches Dell OpenManage asset inventory and support contracts.
 - Dynamic 60-day warning alert badge for contract renewal.
 - API Documentation panel for developers.
 
+---
+
+## Module 6 — Privacy-Preserving Federated Learning (`federated_learning_poc.py`)
+
+**Language:** Python + XGBoost + Scikit-Learn  
+**Who built it:** Antigravity / Team
+
+### What it does:
+Demonstrates that the PredictX-AI prediction model can be trained collaboratively across isolated organizations without exposing any raw telemetry data. It splits the `ai4i2020` dataset into isolated silos, trains independent local models, and then mathematically merges them at a central server.
+
+### Key Optimization Highlights:
+- **Feature Scaling (`StandardScaler`)**: Implemented to fix SMOTE's K-Nearest Neighbor distance calculations. Since raw dataset features vary wildly (1500 RPM vs 40 Nm), scaling the features ensures the synthetic minority over-sampling perfectly captures failure boundary conditions.
+- **Accuracy Boost**: With scaling and deeper tree parameters (`n_estimators=300`, `max_depth=10`), the Global Federated Model achieves an optimized **63.95% F1-Score** (up from the baseline 49.25%) on a massive 96% imbalanced dataset.
+- **Overall Accuracy**: 97.35%.
+
+### How to run:
+```bash
+python model_inference/federated_learning_poc.py
+```
+

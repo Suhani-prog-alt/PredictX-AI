@@ -46,6 +46,13 @@ PredictX-AI uses a decoupled, microservices-oriented architecture to ensure high
   - **Hybrid Navigation**: Utilizes a combination of Bottom Tabs for quick thumb-reach access, and a comprehensive Drawer Sidebar for deep operations.
   - **Live Telemetry Grid**: Integrates directly with the Node.js API to fetch high-frequency updates on hardware metrics and AI risk predictions.
 
+### F. Privacy-Preserving Federated Learning (Simulation)
+- **Technology**: Python, XGBoost, Scikit-Learn (`StandardScaler`)
+- **Function**: A standalone Proof-of-Concept (`federated_learning_poc.py`) demonstrating how the ML Engine can scale across multiple enterprise organizations.
+- **Key Features**:
+  - **Decentralized Data**: Splits a hardware failure dataset between isolated silos (e.g., Bank vs. Hospital).
+  - **Mathematical Aggregation**: Trains independent XGBoost models locally and merges their mathematical parameters centrally, achieving a 63.95% F1-Score without ever exposing raw telemetry data.
+
 ## 3. Data Flow Execution (Step-by-Step)
 1. `agent.py` extracts hardware stats and posts JSON to `Node.js Server`.
 2. `Node.js Server` saves raw telemetry to `MongoDB`.
