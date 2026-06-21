@@ -100,8 +100,15 @@ const streamUpdates = (req, res) => {
 // POST /api/dashboard/devices/:deviceId/resolve - Resolve a device issue
 const resolveDevice = async (req, res) => {
     try {
+        const { feedback } = req.body || {};
+        
         const device = await Device.findOne({ deviceId: req.params.deviceId });
         if (!device) return res.status(404).json({ message: "Device not found" });
+
+        if (feedback) {
+            console.log(`[ML Reinforcement] Received training feedback for ${device.deviceId}:`, feedback);
+            // In a real scenario, this would be appended to a training dataset DB collection
+        }
 
         const prediction = await Prediction.create({
             deviceId: device.deviceId,

@@ -9,6 +9,8 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
   const [isSaved, setIsSaved] = useState(false);
   const [isAutoEnabled, setIsAutoEnabled] = useState(true);
   const [executingTaskId, setExecutingTaskId] = useState(null);
+  const [feedbackTask, setFeedbackTask] = useState(null);
+  const [feedbackData, setFeedbackData] = useState({ isAccurate: 'yes', actualComponent: '', notes: '' });
 
   // Mock historical logs
   const [logs, setLogs] = useState(() => {
@@ -125,13 +127,15 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
   const scheduledTasks = isAutoEnabled ? getScheduledSlots() : [];
 
   // Simulate executing a scheduled task
-  const executeMaintenance = async (task) => {
+  const executeMaintenance = async (task, feedback) => {
     if (executingTaskId) return; // Prevent multiple clicks
     setExecutingTaskId(task.deviceId);
 
     try {
       await fetch(`http://localhost:5000/api/dashboard/devices/${task.deviceId}/resolve`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback })
       });
 
       // Simulate real-world mitigation delay (permissions, data backup, dispatch)
@@ -365,7 +369,10 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
                         </td>
                         <td>
                           <button 
-                            onClick={() => executeMaintenance(task)}
+                            onClick={() => {
+                              setFeedbackTask(task);
+                              setFeedbackData({ isAccurate: 'yes', actualComponent: task.component || '', notes: '' });
+                            }}
                             disabled={executingTaskId !== null}
                             style={{ 
                               background: executingTaskId === task.deviceId ? 'var(--color-warning)' : 'var(--color-success)', 
@@ -447,6 +454,41 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
           </div>
         </div>
       </div>
+
+      {feedbackTask && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <div className="glass-card" style={{ width: '450px', backgroundColor: 'var(--bg-surface)' }}>
+            <h3 style={{ marginBottom: '8px', fontSize: '1.2rem', color: '#fff' }}>ML Validation & Feedback</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px', textTransform: 'lowercase' }}>
+              help improve the predictive model by validating the predicted failure before resolving.
+            </p>
+            <div className="form-group">
+              <label>was the prediction accurate?</label>
+              <select value={feedbackData.isAccurate} onChange={e => setFeedbackData({...feedbackData, isAccurate: e.target.value})}>
+                <option value="yes">yes, component failed as predicted</option>
+                <option value="no">no, false positive or different component</option>
+                <option value="preventative">n/a, replaced preventatively</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label>actual component affected</label>
+              <input type="text" value={feedbackData.actualComponent} onChange={e => setFeedbackData({...feedbackData, actualComponent: e.target.value})} placeholder="e.g. SSD Disk, Cooling Fan" />
+            </div>
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label>technician notes (optional)</label>
+              <textarea value={feedbackData.notes} onChange={e => setFeedbackData({...feedbackData, notes: e.target.value})} placeholder="any additional context for the reinforcement learning model..." rows={3} style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: '#fff', fontSize: '0.85rem' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFeedbackTask(null)}>cancel</button>
+              <button className="btn btn-primary" style={{ flex: 1, backgroundColor: 'var(--color-success)', color: '#000', border: 'none' }} onClick={() => {
+                 executeMaintenance(feedbackTask, feedbackData);
+                 setFeedbackTask(null);
+                 setFeedbackData({ isAccurate: 'yes', actualComponent: '', notes: '' });
+              }}>submit & resolve</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
