@@ -35,7 +35,7 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
   const criticalAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'critical').map(d => ({
     type: 'critical',
     deviceId: d.deviceId,
-    deviceName: d.hostname || d.deviceId,
+    deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
     component: d.latestPrediction.predictedComponent,
     score: d.latestPrediction.failureProbability,
     window: getFailureWindow(d.latestPrediction.failureProbability),
@@ -46,7 +46,7 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
   const warningAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'warning').map(d => ({
     type: 'warning',
     deviceId: d.deviceId,
-    deviceName: d.hostname || d.deviceId,
+    deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
     component: d.latestPrediction.predictedComponent,
     score: d.latestPrediction.failureProbability,
     window: getFailureWindow(d.latestPrediction.failureProbability),
@@ -58,7 +58,7 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
   const infoAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'low' || !d.latestPrediction).map(d => ({
     type: 'info',
     deviceId: d.deviceId,
-    deviceName: d.hostname || d.deviceId,
+    deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
     component: 'System Health',
     score: d.latestPrediction?.failureProbability || 5,
     window: 'Nominal',
@@ -73,7 +73,6 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
       setView('maintenance');
     } else {
       setSelectedDeviceId(deviceId);
-      setView('devices');
     }
   };
 
@@ -152,7 +151,7 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
                   <button
                     className="btn btn-secondary"
                     style={{ whiteSpace: 'nowrap', padding: '8px 20px', fontSize: '0.8rem' }}
-                    onClick={() => { setSelectedDeviceId(alert.deviceId); setView('devices'); }}
+                    onClick={() => setSelectedDeviceId(alert.deviceId)}
                   >
                     View Device
                   </button>

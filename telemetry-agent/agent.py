@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 
 API_URL = "http://localhost:5000/api/telemetry"
+ORG_ID = "dell-hackathon-2026" # Change this per-organization
 
 def get_battery_health():
     # macOS battery health
@@ -69,14 +70,14 @@ def get_hardware_info():
             except Exception as e:
                 pass # Fallback to wmic
                 
-        # Fallback to wmic command line
+        # Fallback to PowerShell (works on Windows 11 where wmic is deprecated)
         try:
-            model = subprocess.check_output(["wmic", "computersystem", "get", "model"], text=True).split('\n')[1].strip()
-            manufacturer = subprocess.check_output(["wmic", "computersystem", "get", "manufacturer"], text=True).split('\n')[1].strip()
-            cpu = subprocess.check_output(["wmic", "cpu", "get", "name"], text=True).split('\n')[1].strip()
-            disk_bytes = subprocess.check_output(["wmic", "diskdrive", "get", "size"], text=True).split('\n')[1].strip()
+            model = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Model"], text=True).strip()
+            manufacturer = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Manufacturer"], text=True).strip()
+            cpu = subprocess.check_output(["powershell", "-Command", "(Get-CimInstance Win32_Processor)[0].Name"], text=True).strip()
+            disk_bytes = subprocess.check_output(["powershell", "-Command", "(Get-CimInstance Win32_DiskDrive)[0].Size"], text=True).strip()
             storage = f"{int(disk_bytes) // (1024 ** 3)} GB SSD"
-            os_info = subprocess.check_output(["wmic", "os", "get", "caption"], text=True).split('\n')[1].strip()
+            os_info = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty Caption"], text=True).strip()
 
             info.update({
                 "manufacturer": manufacturer,
@@ -85,7 +86,7 @@ def get_hardware_info():
                 "storage": storage,
                 "os": os_info
             })
-        except:
+        except Exception as ex:
             info["os"] = f"{platform.system()} {platform.release()}"
     elif platform.system() == "Darwin": # macOS
         try:
@@ -253,6 +254,7 @@ def collect_metrics():
     data = {
 
         "deviceId": socket.gethostname(),
+        "orgId": ORG_ID,
 
         "manufacturer": hardware["manufacturer"],
         "model": hardware["model"],

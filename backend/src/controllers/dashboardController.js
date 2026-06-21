@@ -97,9 +97,42 @@ const streamUpdates = (req, res) => {
     });
 };
 
+// POST /api/dashboard/devices/:deviceId/resolve - Resolve active alerts
+const resolveDeviceAlert = async (req, res) => {
+    try {
+        const deviceId = req.params.deviceId;
+        
+        // Create a healthy prediction to override the latest alert
+        const newPrediction = new Prediction({
+            deviceId,
+            healthScore: 100,
+            failureProbability: 0,
+            riskLevel: "low",
+            predictedComponent: "None",
+            rootCause: "Resolved by user",
+            estimatedFailureWindow: "N/A",
+            recommendation: [],
+            timestamp: new Date()
+        });
+        await newPrediction.save();
+
+        // Broadcast resolution to clients
+        streamService.broadcast({
+            type: 'TELEMETRY_UPDATE',
+            deviceId,
+            prediction: newPrediction
+        });
+
+        res.status(200).json({ success: true, message: "Alert resolved", prediction: newPrediction });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getDashboardSummary,
     getAllDevicesStatus,
     getDeviceDetail,
-    streamUpdates
+    streamUpdates,
+    resolveDeviceAlert
 };

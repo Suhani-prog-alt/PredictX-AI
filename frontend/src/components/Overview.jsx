@@ -158,7 +158,6 @@ export default function Overview({ summary, devices, setView, setSelectedDeviceI
 
   const handleViewDevice = (deviceId) => {
     setSelectedDeviceId(deviceId);
-    setView('devices');
   };
 
   // Derived stats
@@ -441,7 +440,7 @@ export default function Overview({ summary, devices, setView, setSelectedDeviceI
                       {isCritical ? <ShieldAlert size={18} /> : <AlertTriangle size={18} />}
                     </div>
                     <div className="alert-content" style={{ flex: 1 }}>
-                      <h4>{device.hostname || device.deviceId}</h4>
+                      <h4>{device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || device.deviceId)}</h4>
                       <p>
                         failure probability: <strong style={{ color: isCritical ? 'var(--color-danger)' : 'var(--color-warning)' }}>
                           {device.latestPrediction.failureProbability}%
@@ -503,7 +502,7 @@ export default function Overview({ summary, devices, setView, setSelectedDeviceI
                     return (
                       <tr key={device.deviceId}>
                         <td>
-                          <div style={{ fontWeight: 600, color: '#fff' }}>{device.hostname || 'unknown'}</div>
+                          <div style={{ fontWeight: 600, color: '#fff' }}>{device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || 'unknown')}</div>
                         </td>
                         <td>
                           <span className={`badge ${score > 70 ? 'critical' : score > 40 ? 'warning' : 'low'}`} style={{ fontSize: '0.65rem' }}>

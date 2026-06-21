@@ -40,6 +40,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [resolvedCheckboxes, setResolvedCheckboxes] = useState(new Set());
 
   const fetchDeviceData = useCallback(async (isBackground = false) => {
     try {
@@ -68,6 +69,37 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
     
     return () => clearInterval(interval);
   }, [fetchDeviceData]);
+
+  // Effect to handle SSE updates
+  useEffect(() => {
+    if (latestUpdate && latestUpdate.deviceId === deviceId) {
+      fetchDeviceData(true);
+    }
+  }, [latestUpdate, deviceId, fetchDeviceData]);
+
+  // Reset checkboxes when prediction changes
+  useEffect(() => {
+    setResolvedCheckboxes(new Set());
+  }, [data?.latestPrediction?._id]);
+
+  const handleRecommendationCheck = async (idx, isChecked) => {
+    const newSet = new Set(resolvedCheckboxes);
+    if (isChecked) {
+      newSet.add(idx);
+    } else {
+      newSet.delete(idx);
+    }
+    setResolvedCheckboxes(newSet);
+
+    // If all recommendations are checked, resolve the alert
+    if (newSet.size > 0 && newSet.size === data?.latestPrediction?.recommendation?.length) {
+      try {
+        await fetch(`${apiUrl}/dashboard/devices/${deviceId}/resolve`, { method: 'POST' });
+      } catch (err) {
+        console.error("Failed to resolve alert", err);
+      }
+    }
+  };
 
   // Handle incoming real-time telemetry from Server-Sent Events stream
   useEffect(() => {
@@ -330,7 +362,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
           {/* Machine Header */}
           <div className="glass-card" style={{ borderLeft: `3px solid ${risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)'}` }}>
             <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '4px', textTransform: 'uppercase' }}>
-              {device.hostname || 'unknown'}
+              {device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || 'unknown')}
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '16px' }}>
               id: {device.deviceId}
@@ -375,6 +407,19 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                     ttf: {(latestPrediction.estimatedFailureWindow || 'Unknown').toLowerCase()}
                   </span>
                 </>
+              )}
+              {device.orgId && (
+                <span style={{ 
+                  fontSize: '0.9rem', 
+                  padding: '4px 8px', 
+                  border: '1px solid var(--color-info)',
+                  backgroundColor: 'var(--color-info-glow)',
+                  color: 'var(--color-info)',
+                  borderRadius: '2px',
+                  textTransform: 'lowercase'
+                }}>
+                  org :: {device.orgId}
+                </span>
               )}
             </div>
           </div>
@@ -461,7 +506,12 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                   <ul className="rec-list">
                     {latestPrediction.recommendation.map((rec, idx) => (
                       <li key={idx} className="rec-item">
-                        <input type="checkbox" defaultChecked={risk === 'low'} />
+                        <input 
+                          type="checkbox" 
+                          checked={risk === 'low' || resolvedCheckboxes.has(idx)}
+                          onChange={(e) => handleRecommendationCheck(idx, e.target.checked)}
+                          disabled={risk === 'low'}
+                        />
                         <span style={{ textTransform: 'lowercase' }}>{rec}</span>
                       </li>
                     ))}
@@ -525,42 +575,42 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
       {/* Historical Trend Charts */}
       {sortedTelemetry.length > 0 && (
         <div className="detail-charts-grid">
-          <div className="glass-card chart-container" style={{ minHeight: '280px' }}>
+          <div className="glass-card chart-container" style={{ minHeight: '380px' }}>
             <div className="chart-header">
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>performance_history :: cpu/ram</h3>
               <Cpu size={16} color="var(--text-secondary)" />
             </div>
-            <div style={{ flex: 1, position: 'relative', height: '200px' }}>
+            <div style={{ flex: 1, position: 'relative', height: '300px' }}>
               <Line data={performanceChartData} options={chartOptions} />
             </div>
           </div>
 
-          <div className="glass-card chart-container" style={{ minHeight: '280px' }}>
+          <div className="glass-card chart-container" style={{ minHeight: '380px' }}>
             <div className="chart-header">
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>thermal_trend :: cpu/gpu</h3>
               <Wind size={16} color="var(--text-secondary)" />
             </div>
-            <div style={{ flex: 1, position: 'relative', height: '200px' }}>
+            <div style={{ flex: 1, position: 'relative', height: '300px' }}>
               <Line data={thermalChartData} options={chartOptions} />
             </div>
           </div>
 
-          <div className="glass-card chart-container" style={{ minHeight: '280px' }}>
+          <div className="glass-card chart-container" style={{ minHeight: '380px' }}>
             <div className="chart-header">
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>failure_probability_trend :: date/time</h3>
               <TrendingUp size={16} color="var(--text-secondary)" />
             </div>
-            <div style={{ flex: 1, position: 'relative', height: '200px' }}>
+            <div style={{ flex: 1, position: 'relative', height: '300px' }}>
               <Line data={failureProbabilityChartData} options={chartOptions} />
             </div>
           </div>
 
-          <div className="glass-card chart-container" style={{ minHeight: '280px' }}>
+          <div className="glass-card chart-container" style={{ minHeight: '380px' }}>
             <div className="chart-header">
               <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>power_consumption_trend :: date/time</h3>
               <Zap size={16} color="var(--text-secondary)" />
             </div>
-            <div style={{ flex: 1, position: 'relative', height: '200px' }}>
+            <div style={{ flex: 1, position: 'relative', height: '300px' }}>
               <Line data={powerConsumptionChartData} options={powerChartOptions} />
             </div>
           </div>
