@@ -527,8 +527,8 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
                   />
                 </div>
                 <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
-                  <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '40px' }}>
-                    {isSaved ? <span style={{ color: 'var(--color-success)' }}>✓ settings saved</span> : <><Save size={16} /> save settings</>}
+                  <button type="submit" className={`btn ${isSaved ? '' : 'btn-primary'}`} style={{ width: '100%', height: '40px', backgroundColor: isSaved ? 'var(--color-success)' : '', color: isSaved ? '#fff' : '', borderColor: isSaved ? 'var(--color-success)' : '' }}>
+                    {isSaved ? <span>✓ settings saved</span> : <><Save size={16} /> save settings</>}
                   </button>
                 </div>
               </div>

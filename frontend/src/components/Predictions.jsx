@@ -214,7 +214,8 @@ export default function Predictions({ devices }) {
         }
 
         .axis-spacer {
-          width: 220px;
+          width: 300px;
+          min-width: 300px;
           padding-left: 20px;
           font-family: var(--font-mono);
           font-size: 0.7rem;
@@ -250,7 +251,8 @@ export default function Predictions({ devices }) {
         }
 
         .device-info-cell {
-          width: 220px;
+          width: 300px;
+          min-width: 300px;
           display: flex;
           align-items: center;
           padding: 0 20px;

@@ -156,6 +156,7 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
             setSelectedDeviceKey(data[0].deviceId);
             setDeviceSpecs({
               deviceId: data[0].deviceId,
+              orgId: data[0].orgId || 'default-org',
               hostname: data[0].hostname || 'Unknown',
               manufacturer: data[0].manufacturer || 'Unknown',
               model: data[0].model || 'Unknown',
@@ -182,6 +183,7 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
     if (dbDevice) {
       setDeviceSpecs({
         deviceId: dbDevice.deviceId,
+        orgId: dbDevice.orgId || 'default-org',
         hostname: dbDevice.hostname || 'Unknown',
         manufacturer: dbDevice.manufacturer || 'Unknown',
         model: dbDevice.model || 'Unknown',
@@ -215,7 +217,11 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
           gpuTemp: parseFloat(Math.min(100, Math.max(30, telemetry.gpuTemp + (Math.random() * 2 - 1))).toFixed(1))
         };
 
-        const payload = { ...deviceSpecs, ...jitteredTelemetry };
+        const payload = {
+          orgId: deviceSpecs.orgId || 'default-org',
+          ...deviceSpecs,
+          ...jitteredTelemetry
+        };
 
         try {
           const res = await fetch(`${apiUrl}/telemetry`, {
@@ -223,13 +229,17 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+          const json = await res.json();
           if (res.ok) {
-            const json = await res.json();
             setLastResponse(json);
+            setStatus({ type: 'success', message: `live stream active — risk: ${json.prediction?.riskLevel?.toUpperCase() || 'unknown'}` });
             if (onTriggerRefresh) onTriggerRefresh();
+          } else {
+            setStatus({ type: 'danger', message: json.message || `Auto-stream failed: ${res.statusText}` });
           }
         } catch (err) {
           console.error('Auto-fire simulation failed:', err);
+          setStatus({ type: 'danger', message: err.message || 'Auto-stream request failed.' });
         }
       }, 3000); // Send packet every 3 seconds
     }
@@ -265,6 +275,7 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
     setLastResponse(null);
 
     const payload = {
+      orgId: deviceSpecs.orgId || 'default-org',
       ...deviceSpecs,
       ...telemetry
     };
@@ -278,11 +289,11 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) {
-        throw new Error(`Simulation failed: ${res.statusText}`);
-      }
-
       const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.message ? `Simulation failed: ${json.message}` : `Simulation failed: ${res.statusText}`);
+      }
       setLastResponse(json);
       setStatus({ 
         type: 'success', 

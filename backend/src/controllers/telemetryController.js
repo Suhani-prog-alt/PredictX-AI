@@ -18,7 +18,8 @@ const receiveTelemetry = async (req, res) => {
             organization = await Organization.create({
                 orgId: orgId,
                 companyName: orgId === "default-org" ? "Default Organization" : orgId,
-                contactEmail: "admin@example.com"
+                contactEmail: "admin@example.com",
+                passcode: "default"
             });
         }
 
@@ -171,8 +172,9 @@ const receiveTelemetry = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("[Telemetry Controller] receiveTelemetry failed:", error);
         res.status(500).json({
-            message: error.message
+            message: error.message || "Failed to process telemetry"
         });
     }
 };
