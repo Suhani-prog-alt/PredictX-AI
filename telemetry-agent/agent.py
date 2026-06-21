@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 
 API_URL = "http://localhost:5000/api/telemetry"
+ORG_ID = "dell-hackathon-2026" # Change this per-organization
 
 def get_battery_health():
     # macOS battery health
@@ -69,14 +70,14 @@ def get_hardware_info():
             except Exception as e:
                 pass # Fallback to wmic
                 
-        # Fallback to wmic command line
+        # Fallback to PowerShell (works on Windows 11 where wmic is deprecated)
         try:
-            model = subprocess.check_output(["wmic", "computersystem", "get", "model"], text=True).split('\n')[1].strip()
-            manufacturer = subprocess.check_output(["wmic", "computersystem", "get", "manufacturer"], text=True).split('\n')[1].strip()
-            cpu = subprocess.check_output(["wmic", "cpu", "get", "name"], text=True).split('\n')[1].strip()
-            disk_bytes = subprocess.check_output(["wmic", "diskdrive", "get", "size"], text=True).split('\n')[1].strip()
+            model = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Model"], text=True).strip()
+            manufacturer = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Manufacturer"], text=True).strip()
+            cpu = subprocess.check_output(["powershell", "-Command", "(Get-CimInstance Win32_Processor)[0].Name"], text=True).strip()
+            disk_bytes = subprocess.check_output(["powershell", "-Command", "(Get-CimInstance Win32_DiskDrive)[0].Size"], text=True).strip()
             storage = f"{int(disk_bytes) // (1024 ** 3)} GB SSD"
-            os_info = subprocess.check_output(["wmic", "os", "get", "caption"], text=True).split('\n')[1].strip()
+            os_info = subprocess.check_output(["powershell", "-Command", "Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty Caption"], text=True).strip()
 
             info.update({
                 "manufacturer": manufacturer,
@@ -85,7 +86,7 @@ def get_hardware_info():
                 "storage": storage,
                 "os": os_info
             })
-        except:
+        except Exception as ex:
             info["os"] = f"{platform.system()} {platform.release()}"
     elif platform.system() == "Darwin": # macOS
         try:
@@ -253,6 +254,7 @@ def collect_metrics():
     data = {
 
         "deviceId": socket.gethostname(),
+        "orgId": ORG_ID,
 
         "manufacturer": hardware["manufacturer"],
         "model": hardware["model"],
@@ -306,26 +308,42 @@ def collect_metrics():
 
     return data
 
-
-while True:
-
-    payload = collect_metrics()
-
-    print(json.dumps(payload, indent=4))
-
+def set_low_process_priority():
+    """Resource Constraint (3): Ensure agent runs efficiently without lagging the host machine."""
     try:
-        response = requests.post(
-            API_URL,
-            json=payload,
-            timeout=5
-        )
+        p = psutil.Process(os.getpid())
+        if platform.system() == "Windows":
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            p.nice(10) # Unix nice value
+    except:
+        pass
 
-        print("Status:", response.status_code)
-        print("Response:", response.text)
+if __name__ == "__main__":
+    import os
+    set_low_process_priority()
+    print("🚀 Telemetry Agent Started (Low Resource Mode)")
+    print(f"Targeting: {API_URL}")
 
-    except Exception as e:
-        print("Error:", e)
+    while True:
 
-    print("-" * 50)
+        payload = collect_metrics()
 
-    time.sleep(10)
+        print(json.dumps(payload, indent=4))
+
+        try:
+            response = requests.post(
+                API_URL,
+                json=payload,
+                timeout=5
+            )
+
+            print("Status:", response.status_code)
+            print("Response:", response.text)
+
+        except Exception as e:
+            print("Error:", e)
+
+        print("-" * 50)
+
+        time.sleep(2)

@@ -23,6 +23,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/stream", streamRoutes);
 
+const organizationRoutes = require("./routes/organizationRoutes");
+app.use("/api/organizations", organizationRoutes);
+
 // Mock ML Prediction API for simulation and standalone local testing
 app.post("/api/mock-ml", (req, res) => {
     const { cpuUsage, cpuTemp, ramUsage, diskUsage, batteryHealth, smartHealth, gpuTemp } = req.body;

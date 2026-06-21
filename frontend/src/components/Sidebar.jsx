@@ -9,10 +9,12 @@ import {
   Bell,
   ShieldCheck,
   ChevronLeft,
-  Menu
+  Menu,
+  Building,
+  LogOut
 } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, backendOnline, summary, isCollapsed, setIsCollapsed }) {
+export default function Sidebar({ currentView, setView, backendOnline, summary, isCollapsed, setIsCollapsed, onLogout, activeOrgName }) {
   const alertCount = (summary?.criticalDevices || 0) + (summary?.warningDevices || 0);
 
   return (
@@ -43,6 +45,15 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
         >
           <Layers size={18} />
           {!isCollapsed && <span>overview</span>}
+        </li>
+
+        <li 
+          className={`menu-item ${currentView === 'organizations' ? 'active' : ''}`}
+          onClick={() => setView('organizations')}
+          title="Organizations"
+        >
+          <Building size={18} />
+          {!isCollapsed && <span>organizations</span>}
         </li>
 
         <li 
@@ -116,10 +127,36 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
       </ul>
 
       <div className="sidebar-footer">
-        <div className="server-status">
-          <div className={`status-dot ${backendOnline ? 'online' : 'offline'}`}></div>
-          {!isCollapsed && <span>api: {backendOnline ? 'connected' : 'disconnected'}</span>}
+        <div className="server-status" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Building size={14} color="var(--color-primary)" />
+          {!isCollapsed && (
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {activeOrgName}
+            </span>
+          )}
         </div>
+        
+        <button 
+          onClick={onLogout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            width: '100%',
+            padding: '12px',
+            background: 'rgba(240, 74, 74, 0.1)',
+            border: '1px solid var(--color-danger)',
+            color: 'var(--color-danger)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            transition: 'all 0.2s'
+          }}
+          title="Log Out"
+        >
+          <LogOut size={16} />
+          {!isCollapsed && <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>log_out</span>}
+        </button>
       </div>
     </aside>
   );

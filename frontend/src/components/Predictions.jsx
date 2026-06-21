@@ -8,53 +8,16 @@ import {
   Info,
   Bug,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Building
 } from 'lucide-react';
 
 export default function Predictions({ devices }) {
-  const [showDemo, setShowDemo] = useState(false);
-
   // Real data filter
-  const realAtRisk = devices?.filter(d => 
+  const atRiskDevices = devices?.filter(d => 
     d.latestPrediction && 
     (d.latestPrediction.riskLevel?.toLowerCase() === 'warning' || d.latestPrediction.riskLevel?.toLowerCase() === 'critical')
   ) || [];
-
-  // Demo data for visualization testing
-  const demoAtRisk = [
-    {
-      deviceId: 'DEMO-01',
-      hostname: 'US-EAST-DATABASE-04',
-      latestPrediction: {
-        riskLevel: 'critical',
-        failureProbability: 92,
-        predictedComponent: 'NVMe Storage Array',
-        rootCause: 'NAND write exhaustion detected'
-      }
-    },
-    {
-      deviceId: 'DEMO-02',
-      hostname: 'EU-WEST-TRAFFIC-LB',
-      latestPrediction: {
-        riskLevel: 'warning',
-        failureProbability: 65,
-        predictedComponent: 'Cooling Intake Fan',
-        rootCause: 'RPM fluctuations outside 2SD'
-      }
-    },
-    {
-      deviceId: 'DEMO-03',
-      hostname: 'HK-CORE-ROUTER-9',
-      latestPrediction: {
-        riskLevel: 'warning',
-        failureProbability: 48,
-        predictedComponent: 'Power Supply Unit 2',
-        rootCause: 'Voltage ripple exceedance'
-      }
-    }
-  ];
-
-  const atRiskDevices = showDemo ? demoAtRisk : realAtRisk;
 
   /**
    * Calculate a failure window based on probability.
@@ -84,14 +47,6 @@ export default function Predictions({ devices }) {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-             <button 
-              className="btn btn-secondary" 
-              onClick={() => setShowDemo(!showDemo)}
-              style={{ padding: '4px 10px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              {showDemo ? <ToggleRight size={14} color="var(--color-success)" /> : <ToggleLeft size={14} />}
-              demo mode
-            </button>
 
             <div style={{ display: 'flex', gap: '12px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -140,8 +95,15 @@ export default function Predictions({ devices }) {
                   <div key={device.deviceId} className="timeline-row">
                     <div className="device-info-cell">
                       <Monitor size={14} style={{ marginRight: '8px', color: `${color}cc` }} />
-                      <div className="device-name-short">
-                        {device.hostname || device.deviceId}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div className="device-name-short">
+                          {device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || device.deviceId)}
+                        </div>
+                        {device.orgId && (
+                          <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Building size={10} /> {device.orgId}
+                          </div>
+                        )}
                       </div>
                     </div>
                     

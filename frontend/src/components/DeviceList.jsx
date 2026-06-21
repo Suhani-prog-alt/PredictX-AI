@@ -21,6 +21,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Maximize2,
+  Building
 } from 'lucide-react';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -190,7 +191,7 @@ function DeviceDetailPanel({ device, onClose }) {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#fff' }}>
-              {device.hostname || device.deviceId}
+              {device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || device.deviceId)}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
               {getVendor(device)} · id: {device.deviceId}
@@ -353,7 +354,7 @@ function DeviceDetailPanel({ device, onClose }) {
         <div className="modal-overlay" onClick={() => setIsExpanded(false)}>
           <div className="glass-card expanded-chart-modal" onClick={e => e.stopPropagation()}>
             <div className="chart-header" style={{ marginBottom: '20px' }}>
-              <h2>{device.hostname || 'Device'} Breakdown Analysis</h2>
+              <h2>{device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || 'Device')} Breakdown Analysis</h2>
               <button 
                 className="btn-icon" 
                 onClick={() => setIsExpanded(false)}
@@ -381,8 +382,10 @@ export default function DeviceList({ devices, onSelectDevice }) {
 
   const filteredDevices = devices
     ? devices.filter((d) =>
+        (d.orgAssignedId || '').toLowerCase().includes(search.toLowerCase()) ||
         (d.hostname || '').toLowerCase().includes(search.toLowerCase()) ||
         (d.deviceId || '').toLowerCase().includes(search.toLowerCase()) ||
+        (d.orgId || '').toLowerCase().includes(search.toLowerCase()) ||
         (d.manufacturer || '').toLowerCase().includes(search.toLowerCase()) ||
         (d.model || '').toLowerCase().includes(search.toLowerCase())
       )
@@ -421,6 +424,7 @@ export default function DeviceList({ devices, onSelectDevice }) {
               <thead>
                 <tr>
                   <th>device name</th>
+                  <th>organization</th>
                   <th>vendor</th>
                   <th>risk score</th>
                   <th>status</th>
@@ -456,13 +460,25 @@ export default function DeviceList({ devices, onSelectDevice }) {
                           </div>
                           <div>
                             <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>
-                              {device.hostname || 'unknown'}
+                              {device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || 'unknown')}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                               {device.deviceId}
                             </div>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Organization */}
+                      <td>
+                        <span style={{ 
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px',
+                          background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)'
+                        }}>
+                          <Building size={12} />
+                          {device.orgId || 'unknown'}
+                        </span>
                       </td>
 
                       {/* Vendor */}

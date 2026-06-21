@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, RefreshCw, Terminal, Play, CheckCircle2, AlertOctagon } from 'lucide-react';
 
 const DEVICE_PRESETS = {
@@ -132,20 +132,109 @@ const SCENARIO_PRESETS = {
 };
 
 export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
+  const [dbDevices, setDbDevices] = useState([]);
   const [selectedDeviceKey, setSelectedDeviceKey] = useState('dev-101');
   const [deviceSpecs, setDeviceSpecs] = useState(DEVICE_PRESETS['dev-101']);
   
   const [telemetry, setTelemetry] = useState(SCENARIO_PRESETS.healthy);
   const [sending, setSending] = useState(false);
+  const [isAutoFiring, setIsAutoFiring] = useState(false);
   const [lastResponse, setLastResponse] = useState(null);
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  // Handle device change
+  // Fetch real registered devices
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/dashboard/devices`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            setDbDevices(data);
+            
+            // Auto-select the first real device if available
+            setSelectedDeviceKey(data[0].deviceId);
+            setDeviceSpecs({
+              deviceId: data[0].deviceId,
+              hostname: data[0].hostname || 'Unknown',
+              manufacturer: data[0].manufacturer || 'Unknown',
+              model: data[0].model || 'Unknown',
+              cpu: data[0].cpu || 'Unknown',
+              ram: data[0].ram || 'Unknown',
+              storage: data[0].storage || 'Unknown',
+              os: data[0].os || 'Unknown'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch devices for simulator:', err);
+      }
+    };
+    fetchDevices();
+  }, [apiUrl]);
+
   const handleDeviceChange = (e) => {
-    const key = e.target.value;
-    setSelectedDeviceKey(key);
-    setDeviceSpecs(DEVICE_PRESETS[key]);
+    const val = e.target.value;
+    setSelectedDeviceKey(val);
+    
+    // Check if it's a db device
+    const dbDevice = dbDevices.find(d => d.deviceId === val);
+    if (dbDevice) {
+      setDeviceSpecs({
+        deviceId: dbDevice.deviceId,
+        hostname: dbDevice.hostname || 'Unknown',
+        manufacturer: dbDevice.manufacturer || 'Unknown',
+        model: dbDevice.model || 'Unknown',
+        cpu: dbDevice.cpu || 'Unknown',
+        ram: dbDevice.ram || 'Unknown',
+        storage: dbDevice.storage || 'Unknown',
+        os: dbDevice.os || 'Unknown'
+      });
+    } else if (DEVICE_PRESETS[val]) {
+      setDeviceSpecs(DEVICE_PRESETS[val]);
+    }
   };
+
+  // Auto-fire continuous streaming
+  useEffect(() => {
+    let interval;
+    if (isAutoFiring) {
+      interval = setInterval(async () => {
+        // Add realistic jitter (+/- small amounts) to baseline telemetry
+        const jitteredTelemetry = {
+          cpuUsage: parseFloat(Math.min(100, Math.max(1, telemetry.cpuUsage + (Math.random() * 6 - 3))).toFixed(1)),
+          cpuTemp: parseFloat(Math.min(110, Math.max(30, telemetry.cpuTemp + (Math.random() * 4 - 2))).toFixed(1)),
+          ramUsage: parseFloat(Math.min(100, Math.max(5, telemetry.ramUsage + (Math.random() * 2 - 1))).toFixed(1)),
+          diskUsage: telemetry.diskUsage,
+          batteryHealth: telemetry.batteryHealth,
+          cpuPower: parseFloat(Math.max(5, telemetry.cpuPower + (Math.random() * 4 - 2)).toFixed(1)),
+          batteryPower: parseFloat(Math.max(0, telemetry.batteryPower + (Math.random() * 2 - 1)).toFixed(1)),
+          fanRpm: Math.floor(Math.max(0, telemetry.fanRpm + (Math.random() * 200 - 100))),
+          smartHealth: telemetry.smartHealth,
+          gpuUsage: parseFloat(Math.min(100, Math.max(0, telemetry.gpuUsage + (Math.random() * 4 - 2))).toFixed(1)),
+          gpuTemp: parseFloat(Math.min(100, Math.max(30, telemetry.gpuTemp + (Math.random() * 2 - 1))).toFixed(1))
+        };
+
+        const payload = { ...deviceSpecs, ...jitteredTelemetry };
+
+        try {
+          const res = await fetch(`${apiUrl}/telemetry`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            const json = await res.json();
+            setLastResponse(json);
+            if (onTriggerRefresh) onTriggerRefresh();
+          }
+        } catch (err) {
+          console.error('Auto-fire simulation failed:', err);
+        }
+      }, 3000); // Send packet every 3 seconds
+    }
+    return () => clearInterval(interval);
+  }, [isAutoFiring, telemetry, deviceSpecs, apiUrl, onTriggerRefresh]);
 
   // Autofill telemetry scenarios
   const applyScenarioPreset = (scenarioKey) => {
@@ -225,13 +314,19 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
             <div className="form-group">
               <label>select device profile</label>
               <select value={selectedDeviceKey} onChange={handleDeviceChange}>
-                <option value="dev-101">dell precision 5570 (dev-101)</option>
-                <option value="dev-102">macbook pro m3 max (dev-102)</option>
-                <option value="dev-103">thinkpad x1 carbon (dev-103)</option>
-                <option value="dev-104">hp proliant dl380 server (dev-104)</option>
-                <option value="dev-105">asus proart workstation (dev-105)</option>
-                <option value="dev-106">dell poweredge data-node (dev-106)</option>
-                <option value="dev-107">apple mac studio (dev-107)</option>
+                {dbDevices.length > 0 && <optgroup label="Your Registered Devices">
+                  {dbDevices.map(d => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.hostname} ({d.deviceId.substring(0, 8)}...)
+                    </option>
+                  ))}
+                </optgroup>}
+                
+                <optgroup label="Default Test Presets">
+                  <option value="dev-101">dell precision 5570 (dev-101)</option>
+                  <option value="dev-102">macbook pro m3 max (dev-102)</option>
+                  <option value="dev-103">thinkpad x1 carbon (dev-103)</option>
+                </optgroup>
               </select>
             </div>
 
@@ -355,24 +450,57 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
               </div>
             )}
 
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', padding: '12px' }}
-              disabled={sending}
-            >
-              {sending ? (
-                <>
-                  <RefreshCw className="animate-spin" size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                  processing telemetry...
-                </>
-              ) : (
-                <>
-                  <Send size={16} />
-                  transmit mock telemetry packet
-                </>
-              )}
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '12px' }}
+                disabled={sending || isAutoFiring}
+              >
+                {sending ? (
+                  <>
+                    <RefreshCw className="animate-spin" size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    send 1 packet
+                  </>
+                )}
+              </button>
+
+              <button 
+                type="button" 
+                onClick={() => setIsAutoFiring(!isAutoFiring)}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: isAutoFiring ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+                  color: isAutoFiring ? 'var(--color-danger)' : 'var(--color-success)',
+                  border: `1px solid ${isAutoFiring ? 'var(--color-danger)' : 'var(--color-success)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {isAutoFiring ? (
+                  <>
+                    <AlertOctagon size={16} />
+                    stop auto-stream
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} />
+                    start live stream
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         </div>
 

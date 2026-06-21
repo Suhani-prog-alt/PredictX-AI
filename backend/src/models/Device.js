@@ -7,6 +7,14 @@ const deviceSchema = new mongoose.Schema(
         required: true,
         unique: true
     },
+    orgId: {
+        type: String,
+        default: 'default-org'
+    },
+    
+    orgAssignedId: String,
+    
+    originalHostname: String,
 
     hostname: String,
 

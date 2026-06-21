@@ -1,18 +1,56 @@
 const Telemetry = require("../models/Telemetry");
 const Prediction = require("../models/Prediction");
 const Device = require("../models/Device");
+const Organization = require("../models/Organization");
+const crypto = require('crypto');
 
 const { getPrediction } = require("../services/mlService");
 const { generateRecommendation } = require("../services/recommendationService");
 
 const receiveTelemetry = async (req, res) => {
     try {
-        let device = await Device.findOne({ deviceId: req.body.deviceId });
+        let orgId = req.body.orgId || "default-org";
+        let organization = await Organization.findOne({ orgId });
+        
+        // Auto-create default org if missing for backward compatibility
+        if (!organization) {
+            organization = await Organization.create({
+                orgId: orgId,
+                companyName: orgId === "default-org" ? "Default Organization" : orgId,
+                contactEmail: "admin@example.com"
+            });
+        }
+
+        const policy = organization.privacyPolicy || {};
+        
+        let processedDeviceId = req.body.deviceId;
+        let processedHostname = req.body.hostname || `PC-${req.body.deviceId}`;
+
+        // PRIVACY POLICY ENFORCEMENT: Anonymize identifiers if requested by org
+        if (policy.anonymizeDeviceIds) {
+            processedDeviceId = crypto.createHash('sha256').update(req.body.deviceId).digest('hex').substring(0, 12);
+            processedHostname = `Anon-Device-${processedDeviceId}`;
+        }
+
+        // PRIVACY POLICY ENFORCEMENT: Strip employee process activity if requested
+        if (policy.collectProcessCount === false) {
+            req.body.processCount = undefined;
+        }
+
+        let device = await Device.findOne({ deviceId: processedDeviceId });
 
         if (!device) {
+            const orgDeviceCount = await Device.countDocuments({ orgId: orgId });
+            const prefix = orgId.toUpperCase().substring(0, 4);
+            const nextNum = String(orgDeviceCount + 1).padStart(3, '0');
+            const orgAssignedId = `${prefix}-DEV-${nextNum}`;
+
             device = await Device.create({
-                deviceId: req.body.deviceId,
-                hostname: req.body.hostname || `PC-${req.body.deviceId}`,
+                deviceId: processedDeviceId,
+                orgId: orgId,
+                orgAssignedId: orgAssignedId,
+                originalHostname: req.body.hostname || `PC-${req.body.deviceId}`,
+                hostname: processedHostname,
                 manufacturer: req.body.manufacturer || "Unknown",
                 model: req.body.model || "Generic Device",
                 cpu: req.body.cpu || "Unknown CPU",
@@ -32,7 +70,9 @@ const receiveTelemetry = async (req, res) => {
             await device.save();
         }
 
-        const telemetry = await Telemetry.create(req.body);
+        // Update telemetry to use processedDeviceId
+        const telemetryPayload = { ...req.body, deviceId: processedDeviceId };
+        const telemetry = await Telemetry.create(telemetryPayload);
 
         const predictionResult = await getPrediction(req.body);
 
@@ -42,7 +82,7 @@ const receiveTelemetry = async (req, res) => {
         const recommendations = generateRecommendation(predictionResult);
 
         const prediction = await Prediction.create({
-            deviceId: req.body.deviceId,
+            deviceId: processedDeviceId,
             healthScore: predictionResult.healthScore,
             failureProbability: predictionResult.failureProbability,
             riskLevel: predictionResult.riskLevel,
@@ -54,9 +94,9 @@ const receiveTelemetry = async (req, res) => {
 
         // HACKATHON: Simulated Webhook Integration for Nagios/Zabbix/SCOM
         if (predictionResult.riskLevel === 'critical') {
-            console.log(`[ENTERPRISE WEBHOOK] Firing Critical Alert to Nagios for Device ${req.body.deviceId}`);
+            console.log(`[ENTERPRISE WEBHOOK] Firing Critical Alert to Nagios for Device ${processedDeviceId}`);
             console.log(`[ENTERPRISE WEBHOOK] Payload: ${JSON.stringify({
-                device: req.body.deviceId,
+                device: processedDeviceId,
                 alert_type: "HARDWARE_FAILURE_IMMINENT",
                 root_cause: predictionResult.rootCause,
                 recommendation: recommendations[0] || "Dispatch field technician"
@@ -104,7 +144,7 @@ const receiveTelemetry = async (req, res) => {
 
             streamService.broadcast({
                 type: "TELEMETRY_UPDATE",
-                deviceId: req.body.deviceId,
+                deviceId: processedDeviceId,
                 device,
                 telemetry,
                 prediction,

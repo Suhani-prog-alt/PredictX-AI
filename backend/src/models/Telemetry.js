@@ -29,6 +29,8 @@ const telemetrySchema = new mongoose.Schema({
 
     psuVoltageFluctuation: Number,
 
+    processCount: Number,
+
     gpuUsage: Number,
 
     gpuTemp: Number,

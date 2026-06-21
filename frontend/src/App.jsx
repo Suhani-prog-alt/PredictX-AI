@@ -8,7 +8,9 @@ import PredictionView from './components/Predictions';
 import SystemHealth from './components/SystemHealth';
 import TelemetrySimulator from './components/TelemetrySimulator';
 import MaintenanceOptimization from './components/MaintenanceOptimization';
-import { Activity, Settings } from 'lucide-react';
+import Organizations from './components/Organizations';
+import OnboardingFlow from './components/OnboardingFlow';
+import { Activity, Settings, X, Building } from 'lucide-react';
 
 function App() {
   const [currentView, setView] = useState('overview');
@@ -20,11 +22,18 @@ function App() {
   const [backendOnline, setBackendOnline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 'admin' or 'device'
+  const [myDeviceId, setMyDeviceId] = useState(null);
+
   // Global Dashboard Data
   const [summary, setSummary] = useState(null);
   const [devices, setDevices] = useState([]);
   const [latestUpdate, setLatestUpdate] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [orgsList, setOrgsList] = useState([]);
+  const [activeOrgId, setActiveOrgId] = useState('ALL');
 
   // Fetch summary and devices list
   const fetchDashboardData = useCallback(async () => {
@@ -42,6 +51,17 @@ function App() {
       if (!devicesRes.ok) throw new Error('Failed to fetch devices');
       const devicesData = await devicesRes.json();
       setDevices(devicesData);
+
+      // 3. Fetch Organizations
+      try {
+        const orgsRes = await fetch(`${apiUrl}/organizations`);
+        if (orgsRes.ok) {
+          const orgsData = await orgsRes.json();
+          setOrgsList(orgsData);
+        }
+      } catch (e) {
+        // Non-fatal
+      }
     } catch (err) {
       console.error('API Error:', err.message);
       setBackendOnline(false);
@@ -52,14 +72,16 @@ function App() {
 
   // Initial load and periodic polling
   useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 8000); // refresh stats every 8 seconds
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+    if (isAuthenticated) {
+      fetchDashboardData();
+      const interval = setInterval(fetchDashboardData, 8000); // refresh stats every 8 seconds
+      return () => clearInterval(interval);
+    }
+  }, [fetchDashboardData, isAuthenticated]);
 
   // Real-time updates via Server-Sent Events (SSE)
   useEffect(() => {
-    if (!apiUrl) return;
+    if (!apiUrl || !isAuthenticated) return;
 
     const baseApi = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
     const sseUrl = `${baseApi}/dashboard/stream`;
@@ -153,9 +175,19 @@ function App() {
         return 'telemetry agent simulator';
       case 'health':
         return 'platform & ml health';
+      case 'organizations':
+        return 'tenant management';
       default:
         return 'predictx dashboard';
     }
+  };
+
+  const filteredDevices = activeOrgId === 'ALL' ? devices : devices.filter(d => d.orgId === activeOrgId);
+  const filteredSummary = activeOrgId === 'ALL' ? summary : {
+    totalDevices: filteredDevices.length,
+    criticalDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'critical').length,
+    warningDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'warning').length,
+    healthyDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'low').length,
   };
 
   const handleSelectDevice = (deviceId) => {
@@ -166,6 +198,20 @@ function App() {
   const handleBackToList = () => {
     setSelectedDeviceId(null);
   };
+
+  const handleOnboardingComplete = (orgId, deviceId, role) => {
+    setActiveOrgId(orgId);
+    setMyDeviceId(deviceId);
+    setUserRole(role);
+    setIsAuthenticated(true);
+    
+    // If logging in as a device, we could set the view to 'devices' and pre-select it
+    // But for now, we will drop everyone in the overview, and filter their view
+  };
+
+  if (!isAuthenticated) {
+    return <OnboardingFlow onComplete={handleOnboardingComplete} apiUrl={apiUrl} />;
+  }
 
   return (
     <div className={`app-container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -179,7 +225,9 @@ function App() {
         isCollapsed={sidebarCollapsed}
         setIsCollapsed={setSidebarCollapsed}
         backendOnline={backendOnline}
-        summary={summary}
+        summary={filteredSummary}
+        onLogout={() => setIsAuthenticated(false)}
+        activeOrgName={activeOrgId !== 'ALL' ? (orgsList.find(o => o.orgId === activeOrgId)?.companyName || activeOrgId) : 'PredictX Global'}
       />
 
       {/* Main Workspace Area */}
@@ -191,56 +239,66 @@ function App() {
           </div>
           
           <div className="header-actions">
+            {/* The activeOrgName is now shown in the Sidebar instead of here, but we can keep the header badge or remove it. The user said 'at the place of api connected, write organization name', so I'll remove it from header. */}
           </div>
         </header>
 
         {/* View Router */}
-        {currentView === 'overview' && (
-          <Overview 
-            summary={summary} 
-            devices={devices} 
-            setView={setView}
-            setSelectedDeviceId={setSelectedDeviceId}
-          />
-        )}
-
-        {currentView === 'alerts' && (
-          <Alerts devices={devices} setView={setView} setSelectedDeviceId={setSelectedDeviceId} />
-        )}
-
-        {currentView === 'devices' && (
-          selectedDeviceId ? (
-            <DeviceDetail 
-              deviceId={selectedDeviceId} 
-              onBack={handleBackToList}
-              apiUrl={apiUrl}
-              latestUpdate={latestUpdate}
-            />
-          ) : (
-            <DeviceList 
-              devices={devices} 
-              onSelectDevice={handleSelectDevice}
-            />
-          )
-        )}
-
-        {currentView === 'predictions' && (
-          <PredictionView devices={devices} />
-        )}
-
-        {currentView === 'maintenance' && (
-          <MaintenanceOptimization devices={devices} onTriggerRefresh={fetchDashboardData} />
-        )}
-
-        {currentView === 'simulator' && (
-          <TelemetrySimulator 
+        {selectedDeviceId ? (
+          <DeviceDetail 
+            deviceId={selectedDeviceId} 
+            onBack={handleBackToList}
             apiUrl={apiUrl}
-            onTriggerRefresh={fetchDashboardData}
+            latestUpdate={latestUpdate}
           />
-        )}
+        ) : (
+          <>
+            {currentView === 'overview' && (
+              <Overview 
+                summary={filteredSummary} 
+                devices={filteredDevices} 
+                setView={setView}
+                setSelectedDeviceId={setSelectedDeviceId}
+              />
+            )}
 
-        {currentView === 'health' && (
-          <SystemHealth backendOnline={backendOnline} />
+            {currentView === 'alerts' && (
+              <Alerts devices={filteredDevices} setView={setView} setSelectedDeviceId={setSelectedDeviceId} />
+            )}
+
+            {currentView === 'devices' && (
+              <DeviceList 
+                devices={filteredDevices} 
+                onSelectDevice={handleSelectDevice}
+              />
+            )}
+
+            {currentView === 'predictions' && (
+              <PredictionView devices={filteredDevices} />
+            )}
+
+            {currentView === 'maintenance' && (
+              <MaintenanceOptimization devices={filteredDevices} />
+            )}
+
+            {currentView === 'simulator' && (
+              <TelemetrySimulator 
+                apiUrl={apiUrl}
+                onTriggerRefresh={fetchDashboardData}
+              />
+            )}
+
+            {currentView === 'health' && (
+              <SystemHealth backendOnline={backendOnline} />
+            )}
+
+            {currentView === 'organizations' && (
+              <Organizations 
+                setActiveOrgId={setActiveOrgId} 
+                setView={setView} 
+              />
+            )}
+          </>
         )}
       </main>
       
@@ -257,9 +315,30 @@ function App() {
             maxWidth: '350px',
             fontSize: '13px',
             animation: 'fadeIn 0.3s ease-out',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            position: 'relative'
           }}>
-            {n.message}
+            <button 
+              onClick={() => setNotifications(prev => prev.filter(notif => notif.id !== n.id))}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={14} />
+            </button>
+            <div style={{ paddingRight: '16px' }}>
+              {n.message}
+            </div>
           </div>
         ))}
       </div>
