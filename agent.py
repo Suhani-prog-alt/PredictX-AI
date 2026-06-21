@@ -4,10 +4,36 @@ import psutil
 import random
 import sys
 
-# The devices to simulate live telemetry for. 
-# You can pass a specific device ID as a command line argument, otherwise it streams to all 3 demo devices!
-# We've updated this to point to YOUR specific mongoose devices!
-DEMO_DEVICES = ["DELL-DEV-001", "DELL-DEV-002", "DELL-DEV-003"]
+import platform
+import socket
+
+# Get real hardware metadata using cross-platform psutil
+real_hostname = socket.gethostname()
+real_os = f"{platform.system()} {platform.release()}"
+real_cpu = platform.processor() or "Unknown CPU"
+ram_gb = round(psutil.virtual_memory().total / (1024**3))
+disk_gb = round(psutil.disk_usage('/').total / (1024**3))
+
+manufacturer = "Original Hardware"
+model = platform.node()
+
+# If on Windows, use WMI for exact hardware profile
+if platform.system() == "Windows":
+    try:
+        import wmi
+        c = wmi.WMI()
+        sys_info = c.Win32_ComputerSystem()[0]
+        manufacturer = sys_info.Manufacturer.strip()
+        model = sys_info.Model.strip()
+        real_cpu = c.Win32_Processor()[0].Name.strip()
+    except Exception as e:
+        print(f"Warning: WMI could not be loaded ({e})")
+elif platform.system() == "Darwin":
+    manufacturer = "Apple"
+
+
+# We've updated this to point to YOUR specific mongoose devices PLUS your actual laptop!
+DEMO_DEVICES = ["DELL-DEV-001", "DELL-DEV-002", "DELL-DEV-003", f"MY-LAPTOP-{real_hostname}"]
 
 if len(sys.argv) > 1:
     TARGET_DEVICES = [sys.argv[1]]
@@ -37,11 +63,21 @@ def get_real_telemetry(device_id):
     elif device_id == "DELL-DEV-003":
         cpu_temp = 96.0 + random.uniform(-2, 2)
         cpu_usage = 98.0 + random.uniform(-1, 1)
+        ram_percent = ram.percent
     else:
+        # MY-LAPTOP and DELL-DEV-001 use 100% REAL data
         ram_percent = ram.percent
 
     payload = {
         "deviceId": device_id,
+        "orgId": "dell-hackathon-2026",
+        "hostname": real_hostname if "MY-LAPTOP" in device_id else None,
+        "manufacturer": manufacturer if "MY-LAPTOP" in device_id else "Original Hardware",
+        "model": model if "MY-LAPTOP" in device_id else platform.node(),
+        "cpu": real_cpu,
+        "ram": f"{ram_gb} GB",
+        "storage": f"{disk_gb} GB",
+        "os": real_os,
         "cpuUsage": round(cpu_usage, 1),
         "cpuTemp": round(cpu_temp, 1),
         "ramUsage": round(ram_percent, 1),

@@ -14,6 +14,7 @@ predicts failure probability, and displays everything on a live dashboard.
 |--------|-----|
 | Backend (Node.js + MongoDB) | Dhriti |
 | Frontend (React Dashboard) | Dhriti |
+| Mobile App (React Native) | Dhriti |
 | Telemetry Agent (Python) | Shinjineedheer036 |
 | ML Model + FastAPI | Shinjineedheer036 / ML teammate |
 
@@ -51,6 +52,11 @@ predicts failure probability, and displays everything on a live dashboard.
   - Connects to backend REST APIs
   - Listens to SSE stream for live updates
   - Displays dashboard, charts, alerts, predictions
+
+[Mobile App — React Native / Expo]
+  - Connects to backend REST APIs
+  - Displays mobile-optimized live telemetry
+  - Provides hardware alerts and prediction metrics on the go
 ```
 
 ---
@@ -302,6 +308,41 @@ Frontend connects to `GET /api/dashboard/stream` (SSE) and receives live pushes 
 
 ---
 
+## Module 5 — Mobile App (`mobile-app/`)
+
+**Language:** React Native + Expo  
+**Libraries:** React Navigation (Drawer/Tabs), Axios  
+**Who built it:** Dhriti + frontend teammate
+
+### Pages / Views:
+
+**Overview** (`OverviewScreen.js`)
+- High-level mobile dashboard showing Total Devices, Critical, and Warning counts
+- Actionable "Simulate Emergency" capabilities
+
+**Alerts** (`AlertSystemScreen.js`)
+- Mobile list of all active device alerts categorized by risk level
+- Tap any alert to drill down into device telemetry
+
+**Devices** (`DashboardScreen.js`)
+- Complete scrollable registry of all connected devices and hostnames
+
+**Device Analytics** (`AlertManagementScreen.js`)
+- Detailed live telemetry grid optimized for mobile screens
+- Displays CPU Temp, Disk Read, Process Count, and Risk Status
+
+### Navigation Architecture:
+- Uses a hybrid routing setup: a **Drawer Sidebar** (matching the exact Hacker web aesthetic) wrapping **Bottom Tabs** for fast, one-handed operation.
+
+### How to run:
+```bash
+cd mobile-app
+npm install
+npx expo start -c
+```
+
+---
+
 ## Data Flow (End to End)
 
 ```
@@ -330,7 +371,7 @@ ML_API=http://127.0.0.1:8000/predict
 
 ## Running the Full Project
 
-Open 4 terminals:
+Open 5 terminals:
 
 ```bash
 # Terminal 1 — Backend
@@ -344,6 +385,9 @@ cd frontend && npm run dev
 
 # Terminal 4 — Telemetry Agent
 cd telemetry-agent && python agent.py
+
+# Terminal 5 — Mobile App
+cd mobile-app && npx expo start -c
 ```
 
 Frontend runs at: `http://localhost:5173`  
@@ -357,6 +401,7 @@ ML API runs at: `http://localhost:8000`
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19, Vite, Chart.js, Lucide Icons |
+| Mobile App | React Native, Expo, React Navigation |
 | Backend | Node.js, Express 5, Mongoose |
 | Database | MongoDB |
 | ML API | FastAPI, Python, XGBoost, pandas, scikit-learn |

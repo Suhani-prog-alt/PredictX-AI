@@ -110,6 +110,9 @@ Instead of a "black box" prediction, PredictX-AI provides complete transparency.
 ### ✅ Stretch Goal #1: Advanced Analytics
 We utilize an advanced Python data generator (`data_generator.py`) to synthesize complex telemetry anomalies. This allows the predictive engine to continuously test its own boundary conditions against edge-case thermal spikes and memory leak patterns.
 
+### ✅ Stretch Goal #4: Native Mobile Operations App
+To provide true 24/7 coverage, we developed a complete React Native (Expo) mobile application. It mirrors the web dashboard's exact "Hacker/Enterprise" aesthetic, providing IT administrators with a powerful combination of Bottom Tab navigation and a comprehensive Drawer Sidebar to monitor fleet health and receive real-time predictions directly on their iOS/Android devices.
+
 ---
 
 ## 10. System Architecture & Technologies Used
@@ -163,6 +166,10 @@ graph TD
 * **React & Vite:** Chosen to build an incredibly fast, dynamic Single Page Application (SPA) dashboard.
 * **Recharts:** Used to render the real-time, SVG-based telemetry streaming graphs.
 * **Tailwind CSS & Vanilla CSS:** Used to rapidly construct the premium, dark-mode UI with complex micro-animations and the critical 30-Day Outlook matrix.
+
+**6. Mobile Operations App (React Native, Expo, React Navigation)**
+* **React Native & Expo:** Built to seamlessly extend the platform's reach to iOS and Android, allowing on-the-go fleet monitoring.
+* **React Navigation:** Implements a sophisticated hybrid navigation architecture, wrapping quick-access Bottom Tabs inside a deep-dive Drawer Sidebar.
 
 ---
 
@@ -238,7 +245,6 @@ While the current PredictX-AI platform is production-ready, our roadmap includes
 1. **Federated Learning for Privacy:** Implementing privacy-preserving model training where the XGBoost model learns from hardware failures across multiple organizations (e.g., different banks) without ever sharing the raw, sensitive telemetry data between them.
 2. **Direct Vendor API Integrations:** Expanding the edge agent to bypass the OS entirely by integrating directly with Out-Of-Band management APIs like Dell iDRAC (OpenManage), HP iLO, and Lenovo XClarity for deep motherboard-level diagnostics.
 3. **Automated Procurement Workflow:** Integrating the `recommendationService` with ERP systems (like SAP or ServiceNow) to automatically order replacement RAM or Storage drives the moment a 30-day failure prediction is triggered.
-4. **Native Mobile Application:** Developing a React Native (iOS/Android) application for IT administrators to receive push notifications and approve maintenance schedules while physically walking the data center floor.
 
 ---
 ## 15. Conclusion

@@ -468,7 +468,7 @@ export default function DeviceList({ devices, onSelectDevice }) {
                             <Monitor size={14} color={isOpen ? riskColor(score) : 'var(--text-secondary)'} />
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>
+                            <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
                               {device.orgAssignedId ? `${device.orgAssignedId} (${device.originalHostname?.toLowerCase()})` : (device.hostname || 'unknown')}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
