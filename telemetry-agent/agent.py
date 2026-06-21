@@ -9,11 +9,7 @@ import platform
 import random
 from datetime import datetime, timezone
 
-# Optional WMI for Windows
-try:
-    import wmi
-except ImportError:
-    wmi = None
+
 
 API_URL = "http://localhost:5000/api/telemetry"
 
@@ -37,6 +33,11 @@ def get_battery_health():
         pass
     return 0
 
+try:
+    import wmi
+except ImportError:
+    wmi = None
+
 def get_hardware_info():
     info = {
         "manufacturer": "Unknown",
@@ -48,6 +49,27 @@ def get_hardware_info():
     }
 
     if platform.system() == "Windows":
+        # First try using the Python WMI package if it's installed (more reliable on some PCs)
+        if wmi is not None:
+            try:
+                c = wmi.WMI()
+                cs = c.Win32_ComputerSystem()[0]
+                cpu_obj = c.Win32_Processor()[0]
+                os_obj = c.Win32_OperatingSystem()[0]
+                disk = c.Win32_DiskDrive()[0]
+                
+                info.update({
+                    "manufacturer": cs.Manufacturer,
+                    "model": cs.Model,
+                    "cpu": cpu_obj.Name,
+                    "storage": f"{int(disk.Size) // (1024 ** 3)} GB SSD",
+                    "os": os_obj.Caption
+                })
+                return info
+            except Exception as e:
+                pass # Fallback to wmic
+                
+        # Fallback to wmic command line
         try:
             model = subprocess.check_output(["wmic", "computersystem", "get", "model"], text=True).split('\n')[1].strip()
             manufacturer = subprocess.check_output(["wmic", "computersystem", "get", "manufacturer"], text=True).split('\n')[1].strip()
