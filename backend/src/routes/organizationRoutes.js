@@ -69,31 +69,67 @@ router.post("/verify", async (req, res) => {
                 }
             });
 
-            // Seed 3 mock devices for the demo matching the user's local dataset
+            // Seed 2 demo organization devices (live laptop registers separately as DELL-DEV-004)
             const mockDevices = [
-                { id: "DELL-DEV-001", type: "Laptop", os: "Windows 11", risk: "Low", msg: "System operating normally", root: "None", comp: "None", ttf: "Stable", score: 98, rec: ["Standard regular maintenance."] },
-                { id: "DELL-DEV-002", type: "Server", os: "Ubuntu 22.04", risk: "Warning", msg: "High memory utilization detected", root: "Memory Paging / Thrashing", comp: "RAM", ttf: "7 - 30 Days", score: 65, rec: ["Investigate memory leak", "Upgrade RAM capacity"] },
-                { id: "DELL-DEV-003", type: "Workstation", os: "Windows 10", risk: "Critical", msg: "Impending thermal failure on GPU", root: "Critical Thermal Throttling", comp: "GPU", ttf: "1 - 7 Days", score: 12, rec: ["IMMEDIATE ACTION: Device is dangerously overheating."] }
+                {
+                    id: "DELL-LATITUDE-7420",
+                    hostname: "DELL-LATITUDE-7420",
+                    model: "Latitude 7420",
+                    os: "Windows 11 Pro",
+                    cpu: "Intel Core i7-1185G7 @ 3.00GHz",
+                    ram: "16 GB DDR4",
+                    storage: "512 GB NVMe SSD",
+                    status: "healthy",
+                    risk: "low",
+                    score: 94,
+                    failureProbability: 6,
+                    root: "System operating normally",
+                    comp: "None",
+                    ttf: "Stable",
+                    rec: ["Continue standard quarterly maintenance.", "Monitor SMART health during routine checks."]
+                },
+                {
+                    id: "DELL-PRECISION-3680",
+                    hostname: "DELL-PRECISION-3680",
+                    model: "Precision 3680",
+                    os: "Windows 11 Pro",
+                    cpu: "Intel Core i7-14700 @ 2.10GHz",
+                    ram: "32 GB DDR5",
+                    storage: "1 TB NVMe SSD",
+                    status: "warning",
+                    risk: "warning",
+                    score: 38,
+                    failureProbability: 60,
+                    root: "Sustained GPU thermal throttling under CAD workloads",
+                    comp: "GPU",
+                    ttf: "7 - 30 Days",
+                    rec: [
+                        "Inspect GPU cooling assembly and repaste if thermal paste is degraded.",
+                        "Reduce sustained GPU load during peak hours until maintenance window.",
+                        "Schedule workstation thermal audit in next maintenance cycle."
+                    ]
+                }
             ];
 
             for (const d of mockDevices) {
                 await Device.create({
                     deviceId: d.id,
+                    hostname: d.hostname,
                     orgId: 'dell-hackathon-2026',
-                    deviceType: d.type,
-                    osVersion: d.os,
                     manufacturer: 'Dell',
-                    model: d.id,
-                    cpu: 'Intel Core i7-12700H',
-                    ram: '16 GB',
-                    storage: '512 GB NVMe SSD'
+                    model: d.model,
+                    cpu: d.cpu,
+                    ram: d.ram,
+                    storage: d.storage,
+                    os: d.os,
+                    status: d.status
                 });
 
                 await Prediction.create({
                     deviceId: d.id,
                     healthScore: d.score,
                     riskLevel: d.risk,
-                    failureProbability: (100 - d.score) / 100,
+                    failureProbability: d.failureProbability,
                     rootCause: d.root,
                     predictedComponent: d.comp,
                     estimatedFailureWindow: d.ttf,
