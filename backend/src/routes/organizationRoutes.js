@@ -69,73 +69,7 @@ router.post("/verify", async (req, res) => {
                 }
             });
 
-            // Seed 2 demo organization devices (live laptop registers separately as DELL-DEV-004)
-            const mockDevices = [
-                {
-                    id: "DELL-LATITUDE-7420",
-                    hostname: "DELL-LATITUDE-7420",
-                    model: "Latitude 7420",
-                    os: "Windows 11 Pro",
-                    cpu: "Intel Core i7-1185G7 @ 3.00GHz",
-                    ram: "16 GB DDR4",
-                    storage: "512 GB NVMe SSD",
-                    status: "healthy",
-                    risk: "low",
-                    score: 94,
-                    failureProbability: 6,
-                    root: "System operating normally",
-                    comp: "None",
-                    ttf: "Stable",
-                    rec: ["Continue standard quarterly maintenance.", "Monitor SMART health during routine checks."]
-                },
-                {
-                    id: "DELL-PRECISION-3680",
-                    hostname: "DELL-PRECISION-3680",
-                    model: "Precision 3680",
-                    os: "Windows 11 Pro",
-                    cpu: "Intel Core i7-14700 @ 2.10GHz",
-                    ram: "32 GB DDR5",
-                    storage: "1 TB NVMe SSD",
-                    status: "warning",
-                    risk: "warning",
-                    score: 38,
-                    failureProbability: 60,
-                    root: "Sustained GPU thermal throttling under CAD workloads",
-                    comp: "GPU",
-                    ttf: "7 - 30 Days",
-                    rec: [
-                        "Inspect GPU cooling assembly and repaste if thermal paste is degraded.",
-                        "Reduce sustained GPU load during peak hours until maintenance window.",
-                        "Schedule workstation thermal audit in next maintenance cycle."
-                    ]
-                }
-            ];
-
-            for (const d of mockDevices) {
-                await Device.create({
-                    deviceId: d.id,
-                    hostname: d.hostname,
-                    orgId: 'dell-hackathon-2026',
-                    manufacturer: 'Dell',
-                    model: d.model,
-                    cpu: d.cpu,
-                    ram: d.ram,
-                    storage: d.storage,
-                    os: d.os,
-                    status: d.status
-                });
-
-                await Prediction.create({
-                    deviceId: d.id,
-                    healthScore: d.score,
-                    riskLevel: d.risk,
-                    failureProbability: d.failureProbability,
-                    rootCause: d.root,
-                    predictedComponent: d.comp,
-                    estimatedFailureWindow: d.ttf,
-                    recommendation: d.rec
-                });
-            }
+            // Removed the 2 seeded demo organization devices per user request
         }
 
         if (!org) {
