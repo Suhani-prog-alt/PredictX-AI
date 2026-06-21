@@ -210,7 +210,7 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
             </div>
           </div>
           <div className="metric-value">
-            {String(scheduledTasks.filter(t => t.component.toLowerCase().includes('disk') || t.component.toLowerCase().includes('storage')).length + 2).padStart(3, '0')}
+            {String(scheduledTasks.filter(t => (t.component || '').toLowerCase().includes('disk') || (t.component || '').toLowerCase().includes('storage')).length + 2).padStart(3, '0')}
           </div>
         </div>
 
