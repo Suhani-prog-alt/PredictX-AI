@@ -31,6 +31,46 @@ const DEVICE_PRESETS = {
     ram: '32GB LPDDR5x',
     storage: '512GB SSD',
     os: 'Ubuntu 24.04 LTS'
+  },
+  'dev-104': {
+    deviceId: 'dev-104',
+    hostname: 'SERVER-RACK-A',
+    manufacturer: 'HP',
+    model: 'ProLiant DL380',
+    cpu: 'Dual Intel Xeon Gold 6248R',
+    ram: '128GB ECC DDR4',
+    storage: '4TB NVMe RAID 10',
+    os: 'Windows Server 2022'
+  },
+  'dev-105': {
+    deviceId: 'dev-105',
+    hostname: 'DEV-WORKSTATION-X',
+    manufacturer: 'Asus',
+    model: 'ProArt StudioBook',
+    cpu: 'Intel Core i9-13980HX',
+    ram: '64GB DDR5',
+    storage: '2TB PCIe 4.0 SSD',
+    os: 'Windows 11 Pro'
+  },
+  'dev-106': {
+    deviceId: 'dev-106',
+    hostname: 'DATA-NODE-1',
+    manufacturer: 'Dell',
+    model: 'PowerEdge R740',
+    cpu: 'AMD EPYC 7742',
+    ram: '256GB ECC DDR4',
+    storage: '10TB HDD SAS',
+    os: 'Ubuntu 22.04 LTS'
+  },
+  'dev-107': {
+    deviceId: 'dev-107',
+    hostname: 'DESIGN-MAC-STUDIO',
+    manufacturer: 'Apple',
+    model: 'Mac Studio',
+    cpu: 'Apple M2 Ultra',
+    ram: '128GB Unified Memory',
+    storage: '4TB SSD',
+    os: 'macOS Sonoma'
   }
 };
 
@@ -66,7 +106,8 @@ const SCENARIO_PRESETS = {
     cpuTemp: 68,
     ramUsage: 50,
     diskUsage: 80,
-    batteryHealth: 38,
+    batteryHealth: 12,
+    psuVoltageFluctuation: 0.06,
     cpuPower: 25,
     batteryPower: 8,
     fanRpm: 2800,
@@ -78,12 +119,13 @@ const SCENARIO_PRESETS = {
     cpuUsage: 30,
     cpuTemp: 50,
     ramUsage: 40,
-    diskUsage: 96,
+    diskUsage: 98,
     batteryHealth: 90,
     cpuPower: 18,
     batteryPower: 12,
     fanRpm: 2000,
-    smartHealth: 45,
+    smartHealth: 15,
+    smartReallocatedSectors: 25,
     gpuUsage: 5,
     gpuTemp: 45
   }
@@ -186,6 +228,10 @@ export default function TelemetrySimulator({ apiUrl, onTriggerRefresh }) {
                 <option value="dev-101">dell precision 5570 (dev-101)</option>
                 <option value="dev-102">macbook pro m3 max (dev-102)</option>
                 <option value="dev-103">thinkpad x1 carbon (dev-103)</option>
+                <option value="dev-104">hp proliant dl380 server (dev-104)</option>
+                <option value="dev-105">asus proart workstation (dev-105)</option>
+                <option value="dev-106">dell poweredge data-node (dev-106)</option>
+                <option value="dev-107">apple mac studio (dev-107)</option>
               </select>
             </div>
 

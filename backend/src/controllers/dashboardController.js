@@ -97,9 +97,69 @@ const streamUpdates = (req, res) => {
     });
 };
 
+// POST /api/dashboard/devices/:deviceId/resolve - Resolve a device issue
+const resolveDevice = async (req, res) => {
+    try {
+        const { feedback } = req.body || {};
+        
+        const device = await Device.findOne({ deviceId: req.params.deviceId });
+        if (!device) return res.status(404).json({ message: "Device not found" });
+
+        if (feedback) {
+            console.log(`[ML Reinforcement] Received training feedback for ${device.deviceId}:`, feedback);
+            // In a real scenario, this would be appended to a training dataset DB collection
+        }
+
+        const prediction = await Prediction.create({
+            deviceId: device.deviceId,
+            healthScore: 100,
+            failureProbability: 5,
+            riskLevel: "low",
+            predictedComponent: "None",
+            rootCause: "Issue resolved by maintenance.",
+            estimatedFailureWindow: ">14 days",
+            recommendation: ["System operating normally."]
+        });
+
+        device.status = "healthy";
+        await device.save();
+
+        const totalDevices = await Device.countDocuments();
+        const latestPredictions = await Prediction.aggregate([
+            { $sort: { timestamp: -1 } },
+            { $group: { _id: "$deviceId", latestPrediction: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$latestPrediction" } }
+        ]);
+
+        const criticalDevices = latestPredictions.filter(p => p.riskLevel === "critical").length;
+        const warningDevices = latestPredictions.filter(p => p.riskLevel === "warning").length;
+        const healthyDevices = latestPredictions.filter(p => p.riskLevel === "low").length;
+
+        const summary = {
+            totalDevices,
+            criticalDevices,
+            warningDevices,
+            healthyDevices
+        };
+
+        streamService.broadcast({
+            type: "TELEMETRY_UPDATE",
+            deviceId: device.deviceId,
+            device,
+            prediction,
+            summary
+        });
+
+        res.status(200).json({ message: "Device resolved", prediction, summary });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getDashboardSummary,
     getAllDevicesStatus,
     getDeviceDetail,
-    streamUpdates
+    streamUpdates,
+    resolveDevice
 };

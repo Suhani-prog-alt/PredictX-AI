@@ -229,7 +229,7 @@ function App() {
         )}
 
         {currentView === 'maintenance' && (
-          <MaintenanceOptimization devices={devices} />
+          <MaintenanceOptimization devices={devices} onTriggerRefresh={fetchDashboardData} />
         )}
 
         {currentView === 'simulator' && (

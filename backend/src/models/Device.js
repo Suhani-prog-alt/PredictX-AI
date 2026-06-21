@@ -20,7 +20,13 @@ const deviceSchema = new mongoose.Schema(
 
     storage: String,
 
-    os: String
+    os: String,
+
+    status: {
+        type: String,
+        enum: ['healthy', 'warning', 'critical'],
+        default: 'healthy'
+    }
 },
 {
     timestamps: true
