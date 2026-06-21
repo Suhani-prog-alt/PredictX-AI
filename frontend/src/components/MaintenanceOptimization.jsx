@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Wrench, CheckCircle, AlertTriangle, ShieldCheck, Play, Save, Activity } from 'lucide-react';
 
-export default function MaintenanceOptimization({ devices }) {
+export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
   // Configuration for Maintenance Windows
   const [windowDay, setWindowDay] = useState(localStorage.getItem('maint_day') || 'Sunday');
   const [windowTime, setWindowTime] = useState(localStorage.getItem('maint_time') || '02:00');
   const [windowDuration, setWindowDuration] = useState(localStorage.getItem('maint_duration') || '4');
   const [isSaved, setIsSaved] = useState(false);
-  const [isAutoEnabled, setIsAutoEnabled] = useState(localStorage.getItem('maint_auto') !== 'false');
+  const [isAutoEnabled, setIsAutoEnabled] = useState(true);
   const [executingTaskId, setExecutingTaskId] = useState(null);
 
   // Mock historical logs
   const [logs, setLogs] = useState(() => {
     const savedLogs = localStorage.getItem('maint_logs');
-    if (savedLogs) return JSON.parse(savedLogs);
+    if (savedLogs) {
+      let parsed = JSON.parse(savedLogs);
+      if (parsed.length > 2) {
+        parsed = parsed.slice(0, 2);
+        localStorage.setItem('maint_logs', JSON.stringify(parsed));
+      }
+      return parsed;
+    }
     return [
       {
         id: 'log-1',
@@ -33,16 +40,6 @@ export default function MaintenanceOptimization({ devices }) {
         action: 'Replaced battery pack (health was 38%). Run diagnostic cycle.',
         technician: 'John Doe (Lead Diagnostics Eng.)',
         date: '2026-06-15',
-        status: 'success'
-      },
-      {
-        id: 'log-3',
-        deviceId: 'dev-103',
-        hostname: 'THINKPAD-X1',
-        component: 'SSD Disk',
-        action: 'System files migration to new NVMe SSD drive.',
-        technician: 'Automated System Optimizer',
-        date: '2026-06-18',
         status: 'success'
       }
     ];
@@ -64,11 +61,9 @@ export default function MaintenanceOptimization({ devices }) {
   const combinedDevices = devices || [];
 
   const devicesNeedingMaintenance = combinedDevices.filter(d => {
-        if (!d.latestPrediction || (d.latestPrediction.riskLevel !== 'critical' && d.latestPrediction.riskLevel !== 'warning')) return false;
-        // Check if we just simulated fixing this device
-        const isFixed = logs.some(log => log.deviceId === d.deviceId && log.id.startsWith('sim-'));
-        return !isFixed;
-      });
+    if (!d.latestPrediction || (d.latestPrediction.riskLevel !== 'critical' && d.latestPrediction.riskLevel !== 'warning')) return false;
+    return true;
+  });
 
   // Sort them so Critical is scheduled before Warning
   const sortedMaintenanceQueue = [...devicesNeedingMaintenance].sort((a, b) => {
@@ -130,12 +125,18 @@ export default function MaintenanceOptimization({ devices }) {
   const scheduledTasks = isAutoEnabled ? getScheduledSlots() : [];
 
   // Simulate executing a scheduled task
-  const executeMaintenance = (task) => {
+  const executeMaintenance = async (task) => {
     if (executingTaskId) return; // Prevent multiple clicks
     setExecutingTaskId(task.deviceId);
 
-    // Simulate real-world mitigation delay (permissions, data backup, dispatch)
-    setTimeout(() => {
+    try {
+      await fetch(`http://localhost:5000/api/dashboard/devices/${task.deviceId}/resolve`, {
+        method: 'POST'
+      });
+
+      // Simulate real-world mitigation delay (permissions, data backup, dispatch)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const isStorage = task.component?.toLowerCase().includes('disk') || task.component?.toLowerCase().includes('ssd') || task.component?.toLowerCase().includes('storage');
       
       const actionText = isStorage 
@@ -156,8 +157,13 @@ export default function MaintenanceOptimization({ devices }) {
       const updatedLogs = [newLog, ...logs];
       setLogs(updatedLogs);
       localStorage.setItem('maint_logs', JSON.stringify(updatedLogs));
+      
+      if (onTriggerRefresh) onTriggerRefresh();
+    } catch (err) {
+      console.error("Failed to resolve device on backend:", err);
+    } finally {
       setExecutingTaskId(null);
-    }, 2500); // 2.5 second simulated processing delay
+    }
   };
 
   return (
