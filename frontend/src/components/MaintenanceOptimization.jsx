@@ -1,5 +1,63 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, Wrench, CheckCircle, AlertTriangle, ShieldCheck, Play, Save, Activity } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Calendar, Clock, Wrench, CheckCircle, ShieldCheck, Play, Save, Activity, HelpCircle, IndianRupee, PieChart, Wallet } from 'lucide-react';
+
+/** Format amounts in Indian locale (₹) */
+const formatINR = (amount) => `₹${Math.round(amount).toLocaleString('en-IN')}`;
+
+/**
+ * Demo cost-optimization formulas derived from current maintenance queue & audit logs.
+ * Repair Cost Saved + Downtime Cost Saved − Preventive Maintenance Cost
+ */
+function computeCostOptimization({ scheduledTasks, logs, fleetSize }) {
+  const downtimeHoursAvoided = scheduledTasks.length * 12 + logs.length * 8;
+
+  const repairCostSaved =
+    logs.length * 18000 + scheduledTasks.length * 12000;
+  const downtimeCostSaved = downtimeHoursAvoided * 2500;
+  const preventiveMaintenanceCost =
+    logs.length * 6000 + scheduledTasks.length * 4500;
+  const estimatedCostSavings =
+    repairCostSaved + downtimeCostSaved - preventiveMaintenanceCost;
+
+  const devices = Math.max(fleetSize, 1);
+  const annualCostPerDevice = 35000;
+  const reactivePremiumRate = 0.35;
+
+  const tcoWithoutPredictX = Math.round(
+    devices * annualCostPerDevice * (1 + reactivePremiumRate) +
+      scheduledTasks.length * 25000 +
+      logs.length * 15000
+  );
+  const tcoWithPredictX = Math.round(
+    devices * annualCostPerDevice + preventiveMaintenanceCost + logs.length * 8000
+  );
+  const tcoSavings = Math.max(0, tcoWithoutPredictX - tcoWithPredictX);
+
+  const annualBudget = Math.max(devices * 200000, 1000000);
+  const budgetUtilized = Math.round(
+    preventiveMaintenanceCost + logs.length * 15000 + scheduledTasks.length * 10000
+  );
+  const budgetSaved = Math.max(0, annualBudget - budgetUtilized);
+  const budgetUtilizationPct = Math.min(
+    100,
+    Math.round((budgetUtilized / annualBudget) * 100)
+  );
+
+  return {
+    downtimeHoursAvoided,
+    repairCostSaved,
+    downtimeCostSaved,
+    preventiveMaintenanceCost,
+    estimatedCostSavings,
+    tcoWithoutPredictX,
+    tcoWithPredictX,
+    tcoSavings,
+    annualBudget,
+    budgetUtilized,
+    budgetSaved,
+    budgetUtilizationPct,
+  };
+}
 
 export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
   // Configuration for Maintenance Windows
@@ -11,6 +69,7 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
   const [executingTaskId, setExecutingTaskId] = useState(null);
   const [feedbackTask, setFeedbackTask] = useState(null);
   const [feedbackData, setFeedbackData] = useState({ isAccurate: 'yes', actualComponent: '', notes: '' });
+  const [showCostBreakdown, setShowCostBreakdown] = useState(false);
 
   // Mock historical logs
   const [logs, setLogs] = useState(() => {
@@ -126,6 +185,16 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
 
   const scheduledTasks = isAutoEnabled ? getScheduledSlots() : [];
 
+  const costMetrics = useMemo(
+    () =>
+      computeCostOptimization({
+        scheduledTasks,
+        logs,
+        fleetSize: combinedDevices.length,
+      }),
+    [scheduledTasks, logs, combinedDevices.length]
+  );
+
   // Simulate executing a scheduled task
   const executeMaintenance = async (task, feedback) => {
     if (executingTaskId) return; // Prevent multiple clicks
@@ -218,12 +287,158 @@ export default function MaintenanceOptimization({ devices, onTriggerRefresh }) {
           <div className="metric-header">
             <span className="metric-label">est. cost savings</span>
             <div className="metric-icon">
-              <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>$</span>
+              <IndianRupee size={16} />
             </div>
           </div>
           <div className="metric-value" style={{ color: 'var(--color-success)' }}>
-            {(scheduledTasks.length * 450 + logs.length * 300).toLocaleString()}<span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}></span>
+            {formatINR(costMetrics.estimatedCostSavings)}
           </div>
+          <button
+            type="button"
+            onClick={() => setShowCostBreakdown((prev) => !prev)}
+            style={{
+              marginTop: '10px',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              color: 'var(--text-secondary)',
+              fontSize: '0.72rem',
+              cursor: 'pointer',
+              textTransform: 'lowercase',
+            }}
+          >
+            <HelpCircle size={12} />
+            why &amp; how?
+          </button>
+          {showCostBreakdown && (
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid var(--border-color)',
+                fontSize: '0.7rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                textTransform: 'lowercase',
+              }}
+            >
+              <div style={{ marginBottom: '6px', color: '#fff', fontWeight: 600 }}>
+                repair cost saved + downtime cost saved − preventive maintenance cost
+              </div>
+              <div>repair cost saved: {formatINR(costMetrics.repairCostSaved)}</div>
+              <div>downtime cost saved ({costMetrics.downtimeHoursAvoided}h × ₹2,500): {formatINR(costMetrics.downtimeCostSaved)}</div>
+              <div>preventive maintenance cost: −{formatINR(costMetrics.preventiveMaintenanceCost)}</div>
+              <div style={{ marginTop: '6px', color: 'var(--color-success)', fontWeight: 700 }}>
+                = {formatINR(costMetrics.estimatedCostSavings)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Cost Optimization: TCO & Budget */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '20px',
+          marginBottom: '32px',
+        }}
+      >
+        <div className="glass-card">
+          <div className="chart-header" style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1rem', textTransform: 'lowercase' }}>total cost of ownership (tco)</h2>
+            <PieChart size={18} color="var(--color-primary)" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'lowercase' }}>without predictx</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-danger)', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.tcoWithoutPredictX)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'lowercase' }}>with predictx</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.tcoWithPredictX)}
+              </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '12px',
+                borderTop: '1px solid var(--border-color)',
+              }}
+            >
+              <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 600, textTransform: 'lowercase' }}>total savings</span>
+              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.tcoSavings)}
+              </span>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '14px', lineHeight: 1.5, textTransform: 'lowercase' }}>
+            estimated annual tco across {Math.max(combinedDevices.length, 1)} device{combinedDevices.length !== 1 ? 's' : ''}, factoring reactive repair premiums vs. predictive maintenance spend.
+          </p>
+        </div>
+
+        <div className="glass-card">
+          <div className="chart-header" style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1rem', textTransform: 'lowercase' }}>maintenance budget optimization</h2>
+            <Wallet size={18} color="var(--color-warning)" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>annual budget</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.annualBudget)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>used</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-warning)', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.budgetUtilized)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>saved</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                {formatINR(costMetrics.budgetSaved)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>utilization</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>
+                {costMetrics.budgetUtilizationPct}%
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: '14px' }}>
+            <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${costMetrics.budgetUtilizationPct}%`,
+                  height: '100%',
+                  background: costMetrics.budgetUtilizationPct > 85
+                    ? 'var(--color-danger)'
+                    : costMetrics.budgetUtilizationPct > 70
+                      ? 'var(--color-warning)'
+                      : 'var(--color-success)',
+                  borderRadius: '10px',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.5, textTransform: 'lowercase' }}>
+            budget derived from fleet size; utilization reflects scheduled repairs and completed audit spend.
+          </p>
         </div>
       </div>
 
