@@ -38,46 +38,49 @@ def get_battery_health():
     return 0
 
 def get_hardware_info():
-    if platform.system() == "Windows" and wmi is not None:
-        c = wmi.WMI()
-        system = c.Win32_ComputerSystem()[0]
-        processor = c.Win32_Processor()[0]
-        disk = c.Win32_DiskDrive()[0]
-        os_info = c.Win32_OperatingSystem()[0]
+    info = {
+        "manufacturer": "Unknown",
+        "model": "Generic Device",
+        "cpu": "Unknown CPU",
+        "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
+        "storage": "Unknown SSD",
+        "os": "Unknown OS"
+    }
 
-        return {
-            "manufacturer": system.Manufacturer,
-            "model": system.Model,
-            "cpu": processor.Name.strip(),
-            "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
-            "storage": f"{round(int(disk.Size) / (1024 ** 3))} GB",
-            "os": os_info.Caption
-        }
+    if platform.system() == "Windows":
+        try:
+            model = subprocess.check_output(["wmic", "computersystem", "get", "model"], text=True).split('\n')[1].strip()
+            manufacturer = subprocess.check_output(["wmic", "computersystem", "get", "manufacturer"], text=True).split('\n')[1].strip()
+            cpu = subprocess.check_output(["wmic", "cpu", "get", "name"], text=True).split('\n')[1].strip()
+            disk_bytes = subprocess.check_output(["wmic", "diskdrive", "get", "size"], text=True).split('\n')[1].strip()
+            storage = f"{int(disk_bytes) // (1024 ** 3)} GB SSD"
+            os_info = subprocess.check_output(["wmic", "os", "get", "caption"], text=True).split('\n')[1].strip()
+
+            info.update({
+                "manufacturer": manufacturer,
+                "model": model,
+                "cpu": cpu,
+                "storage": storage,
+                "os": os_info
+            })
+        except:
+            info["os"] = f"{platform.system()} {platform.release()}"
     elif platform.system() == "Darwin": # macOS
         try:
             cpu = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
             model = subprocess.check_output(["sysctl", "-n", "hw.model"], text=True).strip()
             os_ver = subprocess.check_output(["sw_vers", "-productVersion"], text=True).strip()
-            return {
+            info.update({
                 "manufacturer": "Apple",
                 "model": model,
                 "cpu": cpu,
-                "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
                 "storage": "Apple SSD",
                 "os": f"macOS {os_ver}"
-            }
+            })
         except:
-            pass
+            info["os"] = f"{platform.system()} {platform.release()}"
             
-    # Fallback for Linux/Others
-    return {
-        "manufacturer": "Unknown",
-        "model": "Generic Device",
-        "cpu": platform.processor() or "Unknown CPU",
-        "ram": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
-        "storage": "Unknown SSD",
-        "os": f"{platform.system()} {platform.release()}"
-    }
+    return info
 
 
 def collect_metrics():
@@ -241,6 +244,8 @@ def collect_metrics():
         "fanRpm": fanRpm,
 
         "smartHealth": smartHealth,
+        "smartReallocatedSectors": random.choice([0, 0, 0, 0, 1, 2, 5]),
+        "psuVoltageFluctuation": round(random.uniform(0.01, 0.05), 3),
 
         "gpuUsage": gpuUsage,
         "gpuTemp": gpuTemp,

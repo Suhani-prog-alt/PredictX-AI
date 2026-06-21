@@ -13,20 +13,20 @@ const receiveTelemetry = async (req, res) => {
             device = await Device.create({
                 deviceId: req.body.deviceId,
                 hostname: req.body.hostname || `PC-${req.body.deviceId}`,
-                manufacturer: "Dell",
-                model: req.body.model || "Latitude 5420",
-                cpu: req.body.cpu || "Intel Core i5-1135G7",
-                ram: req.body.ram || (req.body.ramCapacityGB ? `${req.body.ramCapacityGB} GB` : "16 GB"),
-                storage: req.body.storage || "512 GB NVMe SSD",
-                os: req.body.os || req.body.osVersion || "Windows 11 Pro"
+                manufacturer: req.body.manufacturer || "Unknown",
+                model: req.body.model || "Generic Device",
+                cpu: req.body.cpu || "Unknown CPU",
+                ram: req.body.ram || (req.body.ramCapacityGB ? `${req.body.ramCapacityGB} GB` : "Unknown RAM"),
+                storage: req.body.storage || "Unknown Storage",
+                os: req.body.os || req.body.osVersion || "Unknown OS"
             });
         } else {
             device.hostname = req.body.hostname || device.hostname;
-            device.manufacturer = "Dell";
-            device.model = req.body.model || device.model;
-            device.cpu = req.body.cpu || device.cpu;
+            device.manufacturer = (req.body.manufacturer && req.body.manufacturer !== "Unknown") ? req.body.manufacturer : device.manufacturer;
+            device.model = (req.body.model && req.body.model !== "Generic Device") ? req.body.model : device.model;
+            device.cpu = (req.body.cpu && !req.body.cpu.includes("Unknown")) ? req.body.cpu : device.cpu;
             device.ram = req.body.ram || (req.body.ramCapacityGB ? `${req.body.ramCapacityGB} GB` : device.ram);
-            device.storage = req.body.storage || device.storage;
+            device.storage = (req.body.storage && !req.body.storage.includes("Unknown")) ? req.body.storage : device.storage;
             device.os = req.body.os || req.body.osVersion || device.os;
 
             await device.save();
@@ -48,6 +48,17 @@ const receiveTelemetry = async (req, res) => {
             estimatedFailureWindow: predictionResult.estimatedFailureWindow,
             recommendation: recommendations
         });
+
+        // HACKATHON: Simulated Webhook Integration for Nagios/Zabbix/SCOM
+        if (predictionResult.riskLevel === 'critical') {
+            console.log(`[ENTERPRISE WEBHOOK] Firing Critical Alert to Nagios for Device ${req.body.deviceId}`);
+            console.log(`[ENTERPRISE WEBHOOK] Payload: ${JSON.stringify({
+                device: req.body.deviceId,
+                alert_type: "HARDWARE_FAILURE_IMMINENT",
+                root_cause: predictionResult.rootCause,
+                recommendation: recommendations[0] || "Dispatch field technician"
+            })}`);
+        }
 
         try {
             const totalDevices = await Device.countDocuments();

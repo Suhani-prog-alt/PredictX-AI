@@ -394,8 +394,8 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
                 </span>
               </div>
             )}
-            <div className="spec-item">
-              <span>manufacturer</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span>brand</span>
               <span style={{ textTransform: 'lowercase' }}>{device.manufacturer}</span>
             </div>
             <div className="spec-item">
@@ -429,7 +429,7 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
               <div className="rec-title" style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)' }}>
                 {risk === 'critical' ? <AlertTriangle size={18} /> : risk === 'warning' ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
                 <span style={{ textTransform: 'lowercase' }}>
-                  ml_assessment :: {risk === 'critical' ? 'urgent_failure_risk' : risk === 'warning' ? 'degraded_performance_warning' : 'system_healthy'}
+                  ml_assessment :: {risk === 'critical' ? 'urgent_failure_risk' : risk === 'warning' ? (latestPrediction?.healthScore > 40 ? 'moderate_performance_degradation' : 'degraded_performance_warning') : 'system_healthy'}
                 </span>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '6px', marginBottom: '16px', borderLeft: '2px solid var(--color-primary)' }}>

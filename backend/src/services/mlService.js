@@ -37,9 +37,11 @@ const getPrediction = async (telemetry) => {
             // Map python risk level (Low, Moderate, High, Critical) to backend (low, warning, critical)
             let mappedRisk = "low";
             const pythonRisk = (diag.risk_level || "Low").toLowerCase();
-            if (pythonRisk === "critical") {
+            const healthScore = Math.round(diag.health_score);
+
+            if (pythonRisk === "critical" || healthScore <= 30) {
                 mappedRisk = "critical";
-            } else if (pythonRisk === "high") {
+            } else if (pythonRisk === "high" || pythonRisk === "moderate" || healthScore <= 60) {
                 mappedRisk = "warning";
             } else {
                 mappedRisk = "low";
@@ -47,12 +49,12 @@ const getPrediction = async (telemetry) => {
              
 
             return {
-                healthScore: Math.round(diag.health_score),
-                failureProbability: Math.round(diag.failure_probability_percent),
+                healthScore: healthScore,
+                failureProbability: Math.round(diag.failure_probability),
                 riskLevel: mappedRisk,
-                predictedComponent: diag.predicted_component,
-                rootCause: diag.root_cause,
-                estimatedFailureWindow: diag.estimated_failure_window
+                predictedComponent: diag.predicted_component || "Unknown",
+                rootCause: diag.root_cause || "Analyzing telemetry anomalies...",
+                estimatedFailureWindow: diag.estimated_failure_window || "Unknown",
             };
         }
     } catch (error) {
@@ -77,6 +79,9 @@ const getPrediction = async (telemetry) => {
         gpuTemp  >= 85 ? 80 : gpuTemp  >= 75 ? 55 : gpuTemp  >= 65 ? 30 : 5
     ));
 
+    const smartReallocatedSectors = telemetry.smartReallocatedSectors || 0;
+    const psuVoltageFluctuation = telemetry.psuVoltageFluctuation || 0.01;
+
     // Cooling risk: high fan RPM = fans working hard = possible thermal throttle
     const coolingScore =
         fanRpm >= 5500 ? 85 :
@@ -85,18 +90,21 @@ const getPrediction = async (telemetry) => {
         fanRpm === 0   ? 10 : // no fan data
         5;
 
-    // Storage/Disk risk: disk usage + S.M.A.R.T health
+    // Storage/Disk risk: disk usage + S.M.A.R.T health + Reallocated Sectors
     const diskScore  = diskUsage  >= 95 ? 90 : diskUsage  >= 85 ? 65 : diskUsage  >= 75 ? 40 : diskUsage  >= 60 ? 20 : 5;
     const smartScore = smartHealth <= 20 ? 90 : smartHealth <= 40 ? 70 : smartHealth <= 60 ? 45 : smartHealth <= 80 ? 20 : 5;
-    const storageScore = Math.round((diskScore * 0.5) + (smartScore * 0.5));
+    const sectorScore = smartReallocatedSectors >= 5 ? 95 : smartReallocatedSectors >= 2 ? 60 : smartReallocatedSectors >= 1 ? 30 : 0;
+    const storageScore = Math.round((diskScore * 0.3) + (smartScore * 0.3) + (sectorScore * 0.4));
 
-    // Power risk: battery health degradation
-    const powerScore =
+    // Power risk: battery health degradation + PSU voltage fluctuations
+    const batteryScore =
         batteryHealth <= 20 ? 90 :
         batteryHealth <= 40 ? 70 :
         batteryHealth <= 60 ? 45 :
         batteryHealth <= 80 ? 20 :
         5;
+    const psuScore = psuVoltageFluctuation >= 0.04 ? 85 : psuVoltageFluctuation >= 0.02 ? 40 : 5;
+    const powerScore = Math.round((batteryScore * 0.5) + (psuScore * 0.5));
 
     // CPU/RAM performance pressure
     const cpuPressure  = cpuUsage  >= 95 ? 90 : cpuUsage  >= 85 ? 65 : cpuUsage  >= 70 ? 40 : cpuUsage  >= 50 ? 20 : 5;
@@ -135,8 +143,8 @@ const getPrediction = async (telemetry) => {
     // Root cause message
     const rootCauseMap = {
         "Thermal / CPU":   `CPU temperature elevated (${cpuTemp}°C). Risk of thermal throttling.`,
-        "Storage / Disk":  `Disk usage at ${diskUsage}% with S.M.A.R.T health at ${smartHealth}%. Storage degradation detected.`,
-        "Power / Battery": `Battery health at ${batteryHealth}%. Power subsystem showing wear.`,
+        "Storage / Disk":  `S.M.A.R.T data shows ${smartReallocatedSectors} reallocated sectors and ${smartHealth}% overall health. Impending storage failure.`,
+        "Power / Battery": `Detected PSU voltage fluctuation of ${psuVoltageFluctuation}V and battery health ${batteryHealth}%. Power delivery degradation.`,
         "Cooling / Fan":   `Fan running at ${fanRpm} RPM. Cooling performance may be insufficient.`,
     };
     const rootCause = riskLevel === "low"

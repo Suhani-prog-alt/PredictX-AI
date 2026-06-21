@@ -24,6 +24,7 @@ function App() {
   const [summary, setSummary] = useState(null);
   const [devices, setDevices] = useState([]);
   const [latestUpdate, setLatestUpdate] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   // Fetch summary and devices list
   const fetchDashboardData = useCallback(async () => {
@@ -96,6 +97,23 @@ function App() {
               }
             });
             
+            // 4. Trigger Toast Notification for Escalated Alerts
+            if (data.prediction && (data.prediction.riskLevel === 'critical' || data.prediction.riskLevel === 'warning')) {
+              setNotifications(prev => {
+                const newNotif = {
+                  id: Date.now(),
+                  message: `[${data.prediction.riskLevel.toUpperCase()}] Device ${data.deviceId}: ${data.prediction.rootCause}`,
+                  type: data.prediction.riskLevel
+                };
+                return [newNotif, ...prev].slice(0, 3); // keep up to 3 notifications
+              });
+              
+              // auto dismiss
+              setTimeout(() => {
+                setNotifications(prev => prev.slice(0, prev.length - 1));
+              }, 8000);
+            }
+
             setBackendOnline(true);
           }
         } catch (err) {
@@ -173,17 +191,6 @@ function App() {
           </div>
           
           <div className="header-actions">
-            {/* Editable API URL */}
-            <div className="api-badge">
-              <Settings size={14} />
-              <span>api url:</span>
-              <input 
-                type="text" 
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                placeholder="http://localhost:5000/api"
-              />
-            </div>
           </div>
         </header>
 
@@ -236,6 +243,26 @@ function App() {
           <SystemHealth backendOnline={backendOnline} />
         )}
       </main>
+      
+      {/* Toast Notifications Layer */}
+      <div style={{ position: 'fixed', bottom: '20px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 9999 }}>
+        {notifications.map(n => (
+          <div key={n.id} style={{
+            background: 'rgba(20,20,25,0.95)',
+            borderLeft: `4px solid ${n.type === 'critical' ? 'var(--color-danger)' : 'var(--color-warning)'}`,
+            padding: '16px',
+            borderRadius: '4px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            color: '#fff',
+            maxWidth: '350px',
+            fontSize: '13px',
+            animation: 'fadeIn 0.3s ease-out',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {n.message}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
