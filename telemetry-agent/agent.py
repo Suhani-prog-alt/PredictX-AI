@@ -82,8 +82,16 @@ def get_hardware_info():
             
     return info
 
+cumulative_reallocated_sectors = 0
+loop_count = 0
 
 def collect_metrics():
+    global cumulative_reallocated_sectors, loop_count
+    
+    loop_count += 1
+    # For HACKATHON DEMO: Increase reallocated sectors quickly so it fails within a minute
+    if loop_count % 3 == 0:
+        cumulative_reallocated_sectors += random.randint(1, 3)
 
     hardware = get_hardware_info()
 

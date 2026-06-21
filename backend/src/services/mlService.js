@@ -50,7 +50,7 @@ const getPrediction = async (telemetry) => {
 
             return {
                 healthScore: healthScore,
-                failureProbability: Math.round(diag.failure_probability),
+                failureProbability: Math.round(diag.failure_probability_percent || diag.failure_probability || 0),
                 riskLevel: mappedRisk,
                 predictedComponent: diag.predicted_component || "Unknown",
                 rootCause: diag.root_cause || "Analyzing telemetry anomalies...",
