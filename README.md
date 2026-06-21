@@ -12,10 +12,11 @@ PredictX-AI is an enterprise-grade predictive hardware maintenance platform desi
 
 ## 🏗️ Architecture
 1.  **Frontend**: React (Vite) + Lucide Icons + Recharts
-2.  **Backend API**: Node.js + Express
-3.  **Database**: MongoDB (Mongoose) with time-series scalability indexes
-4.  **Machine Learning Inference**: Python FastAPI + XGBoost (scikit-learn/joblib)
-5.  **Local Agent**: Python daemon (`agent.py`)
+2.  **Mobile App**: React Native (Expo) + React Navigation (Drawer/Tabs)
+3.  **Backend API**: Node.js + Express
+4.  **Database**: MongoDB (Mongoose) with time-series scalability indexes
+5.  **Machine Learning Inference**: Python FastAPI + XGBoost (scikit-learn/joblib)
+6.  **Local Agent**: Python daemon (`agent.py`)
 
 ## 🛠️ Installation & Setup
 
@@ -50,7 +51,16 @@ npm run dev
 ```
 *Runs on `http://localhost:5173`*
 
-### 5. Running the Telemetry Agent
+### 5. Mobile App (React Native)
+A fully-featured mobile application built with Expo, matching the web dashboard's hacker aesthetic and providing live telemetry to admins on the go.
+```bash
+cd mobile-app
+npm install
+npx expo start -c
+```
+*Runs via Expo Go on Android/iOS*
+
+### 6. Running the Telemetry Agent
 To stream live data from your local machine to the dashboard:
 ```bash
 pip install psutil requests
