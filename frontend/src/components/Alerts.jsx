@@ -31,8 +31,10 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
     return '>14 days';
   };
 
+  const activeDevices = devices || [];
+
   // Process devices into alerts
-  const criticalAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'critical').map(d => ({
+  const criticalAlerts = activeDevices.filter(d => d.latestPrediction?.riskLevel === 'critical').map(d => ({
     type: 'critical',
     deviceId: d.deviceId,
     deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
@@ -41,9 +43,9 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
     window: getFailureWindow(d.latestPrediction.failureProbability),
     action: 'Emergency Hardware Swap',
     details: d.latestPrediction.rootCause
-  })) || [];
+  }));
 
-  const warningAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'warning').map(d => ({
+  const warningAlerts = activeDevices.filter(d => d.latestPrediction?.riskLevel === 'warning').map(d => ({
     type: 'warning',
     deviceId: d.deviceId,
     deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
@@ -52,10 +54,10 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
     window: getFailureWindow(d.latestPrediction.failureProbability),
     action: 'Schedule Maintenance',
     details: d.latestPrediction.rootCause
-  })) || [];
+  }));
 
   // Info alerts for generally healthy but registered devices
-  const infoAlerts = devices?.filter(d => d.latestPrediction?.riskLevel === 'low' || !d.latestPrediction).map(d => ({
+  const infoAlerts = activeDevices.filter(d => d.latestPrediction?.riskLevel === 'low' || !d.latestPrediction).map(d => ({
     type: 'info',
     deviceId: d.deviceId,
     deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
@@ -64,7 +66,7 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
     window: 'Nominal',
     action: 'View Telemetry',
     details: 'Device operating within normal parameters.'
-  })) || [];
+  }));
 
   const allAlerts = [...criticalAlerts, ...warningAlerts, ...infoAlerts.slice(0, 5)];
 

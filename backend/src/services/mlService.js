@@ -121,15 +121,12 @@ const getPrediction = async (telemetry) => {
     const cpuPressure  = cpuUsage  >= 95 ? 90 : cpuUsage  >= 85 ? 65 : cpuUsage  >= 70 ? 40 : cpuUsage  >= 50 ? 20 : 5;
     const ramPressure  = ramUsage  >= 95 ? 90 : ramUsage  >= 85 ? 65 : ramUsage  >= 75 ? 40 : ramUsage  >= 60 ? 20 : 5;
 
-    // Overall failure probability (weighted average)
-    const failureProbability = Math.round(
-        thermalScore  * 0.25 +
-        storageScore  * 0.20 +
-        powerScore    * 0.15 +
-        coolingScore  * 0.15 +
-        cpuPressure   * 0.15 +
-        ramPressure   * 0.10
-    );
+    // Overall failure probability: take the maximum risk among critical subsystems
+    // Plus a small baseline from overall system pressure
+    const basePressure = Math.round((cpuPressure * 0.5 + ramPressure * 0.5) * 0.2);
+    const maxSubsystemRisk = Math.max(thermalScore, storageScore, powerScore, coolingScore);
+    
+    const failureProbability = Math.min(100, maxSubsystemRisk + basePressure);
 
     // Risk level
     const riskLevel =

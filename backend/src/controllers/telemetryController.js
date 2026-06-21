@@ -76,6 +76,9 @@ const receiveTelemetry = async (req, res) => {
 
         const predictionResult = await getPrediction(req.body);
 
+        device.status = predictionResult.riskLevel === 'low' ? 'healthy' : predictionResult.riskLevel;
+        await device.save();
+
         const recommendations = generateRecommendation(predictionResult);
 
         const prediction = await Prediction.create({
