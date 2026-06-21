@@ -363,3 +363,41 @@ ML API runs at: `http://localhost:8000`
 | Agent | Python, psutil, requests |
 | Real-time | Server-Sent Events (SSE) |
 | Version Control | Git + GitHub |
+
+---
+
+## Module 5 — Dell OpenManage Vendor Integration (`/vendor-info`)
+
+**Language:** Node.js (Backend) + React (Frontend)  
+**Who built it:** Dhriti / Antigravity
+
+### What it does:
+Integrates hardware asset records, contract databases, and firmware versions from Dell OpenManage / iDRAC systems. It displays connection logs and alerts administrators when support warranties are expiring.
+
+### API Endpoint (GET /vendor-info):
+Fetches Dell OpenManage asset inventory and support contracts.
+
+#### Response Payload (JSON):
+```json
+{
+  "vendorName": "Dell Inc.",
+  "assetTag": "JP-8X49-C10",
+  "deviceModel": "PowerEdge R750",
+  "firmwareVersion": "iDRAC9 v6.10.05.00",
+  "warrantyStatus": "Active (ProSupport Plus)",
+  "warrantyExpiryDate": "2026-08-15T00:00:00.000Z",
+  "connectionStatus": "Connected",
+  "openManageVersion": "v4.1.0",
+  "lastSyncTime": "2026-06-21T17:40:00.000Z",
+  "systemAlerts": 0,
+  "hardwareHealth": "Nominal"
+}
+```
+
+### Dashboard View (`VendorIntegration.jsx`):
+- Dell Connectivity Status: Live pulse indicator of OpenManage API integrations.
+- Firmware Profile: Tracks iDRAC configuration versions.
+- Warranty Status & Expiry tracking.
+- Dynamic 60-day warning alert badge for contract renewal.
+- API Documentation panel for developers.
+

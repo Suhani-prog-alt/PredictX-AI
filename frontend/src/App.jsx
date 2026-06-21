@@ -12,6 +12,7 @@ import Diagnostics from './components/Diagnostics';
 import Organizations from './components/Organizations';
 import OnboardingFlow from './components/OnboardingFlow';
 import ModelTraining from './components/ModelTraining';
+import VendorIntegration from './components/VendorIntegration';
 import { Activity, Settings, X, Building, BrainCircuit } from 'lucide-react';
 
 function App() {
@@ -181,6 +182,8 @@ function App() {
         return 'tenant management';
       case 'diagnostics':
         return 'interactive diagnostics';
+      case 'vendor':
+        return 'vendor integration';
       default:
         return 'predictx dashboard';
     }
@@ -310,6 +313,7 @@ function App() {
               />
             )}
             {currentView === 'model' && <ModelTraining apiUrl={apiUrl} />}
+            {currentView === 'vendor' && <VendorIntegration apiUrl={apiUrl} />}
           </>
         )}
       </main>

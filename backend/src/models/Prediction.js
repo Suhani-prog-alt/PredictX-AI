@@ -21,6 +21,10 @@ const predictionSchema = new mongoose.Schema({
 
     recommendation: [String],
 
+    anomalyScore: Number,
+
+    anomalyAlert: Boolean,
+
     cascadeChain: [
         {
             step: Number,

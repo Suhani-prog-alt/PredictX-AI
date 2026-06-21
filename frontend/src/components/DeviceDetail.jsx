@@ -22,7 +22,8 @@ import {
   Wind,
   BatteryCharging,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 
 ChartJS.register(
@@ -274,6 +275,21 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
     ]
   };
 
+  const anomalyScoreChartData = {
+    labels: predictionTimestamps,
+    datasets: [
+      {
+        label: 'anomaly score',
+        data: sortedPredictions.map(p => p.anomalyScore !== undefined ? p.anomalyScore : 0.0),
+        borderColor: '#f59e0b', // amber
+        backgroundColor: 'rgba(245, 158, 11, 0.05)',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 1.5,
+      }
+    ]
+  };
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -328,6 +344,22 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
         grid: { color: 'rgba(255, 255, 255, 0.04)' },
         ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } },
         beginAtZero: true
+      }
+    }
+  };
+
+  const anomalyChartOptions = {
+    ...chartOptions,
+    scales: {
+      x: {
+        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+        ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } }
+      },
+      y: {
+        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+        ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } },
+        min: 0,
+        max: 1
       }
     }
   };
@@ -521,6 +553,56 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
             </div>
           )}
 
+          {/* Advanced Analytics Card */}
+          {latestPrediction && latestPrediction.anomalyScore !== undefined && (
+            <div className="glass-card" style={{ borderLeft: `3px solid ${latestPrediction.anomalyAlert ? 'var(--color-warning)' : 'var(--color-info)'}`, padding: '24px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', textTransform: 'lowercase', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={16} color="var(--color-info)" />
+                advanced_analytics :: anomaly_detection
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'lowercase' }}>isolation_forest_score</span>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: latestPrediction.anomalyAlert ? 'var(--color-warning)' : '#fff' }}>
+                    {latestPrediction.anomalyScore.toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  {latestPrediction.anomalyAlert ? (
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      padding: '6px 12px', 
+                      border: '1px solid var(--color-warning)',
+                      backgroundColor: 'var(--color-warning-glow)',
+                      color: 'var(--color-warning)',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}>
+                      ⚠️ Unknown Failure Pattern Detected
+                    </span>
+                  ) : (
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      padding: '6px 12px', 
+                      border: '1px solid var(--color-success)',
+                      backgroundColor: 'var(--color-success-glow)',
+                      color: 'var(--color-success)',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}>
+                      ✓ Nominal Operating Profile
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+                the isolation forest algorithm evaluates cpuTemp, ramUsage, diskUsage, batteryHealth, and fanRpm to isolate unusual feature combinations. high scores indicate multi-dimensional hardware drift or a potential zero-day failure pattern.
+              </p>
+            </div>
+          )}
+
           {/* Current Telemetry Widgets */}
           <div className="glass-card">
             <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', textTransform: 'lowercase', marginBottom: '16px' }}>live_telemetry</h3>
@@ -671,6 +753,18 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
               <Line data={powerConsumptionChartData} options={powerChartOptions} />
             </div>
           </div>
+
+          {sortedPredictions.some(p => p.anomalyScore !== undefined) && (
+            <div className="glass-card chart-container" style={{ minHeight: '380px' }}>
+              <div className="chart-header">
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>anomaly_score_history :: isolation_forest</h3>
+                <TrendingUp size={16} color="var(--text-secondary)" />
+              </div>
+              <div style={{ flex: 1, position: 'relative', height: '300px' }}>
+                <Line data={anomalyScoreChartData} options={anomalyChartOptions} />
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

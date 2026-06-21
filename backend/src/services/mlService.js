@@ -23,7 +23,8 @@ const getPrediction = async (telemetry) => {
         cpu_usage: telemetry.cpuUsage !== undefined ? Number(telemetry.cpuUsage) : undefined,
         ram_usage: telemetry.ramUsage !== undefined ? Number(telemetry.ramUsage) : undefined,
         disk_usage: telemetry.diskUsage !== undefined ? Number(telemetry.diskUsage) : undefined,
-        disk_type: telemetry.diskType || "SSD"
+        disk_type: telemetry.diskType || "SSD",
+        fan_rpm: telemetry.fanRpm !== undefined ? Number(telemetry.fanRpm) : undefined
     };
     const startTime = Date.now();
 
@@ -65,7 +66,9 @@ const getPrediction = async (telemetry) => {
                 rootCause: diag.root_cause || "Analyzing telemetry anomalies...",
                 estimatedFailureWindow: diag.estimated_failure_window || "Unknown",
                 processingLatencyMs,
-                confidenceScore
+                confidenceScore,
+                anomalyScore: diag.anomaly_score !== undefined ? diag.anomaly_score : 0.0,
+                anomalyAlert: !!diag.anomaly_alert
             };
         }
     } catch (error) {
@@ -129,7 +132,7 @@ const getPrediction = async (telemetry) => {
     const failureProbability = Math.min(100, maxSubsystemRisk + basePressure);
 
     // Risk level
-    const riskLevel =
+    let riskLevel =
         failureProbability >= 70 ? "critical" :
         failureProbability >= 40 ? "warning"  : "low";
 
@@ -171,6 +174,17 @@ const getPrediction = async (telemetry) => {
     }
     const processingLatencyMs = Date.now() - startTime;
 
+    // Fallback Anomaly Engine using multi-dimensional deviation thresholds
+    const tempDev = Math.max(0, (cpuTemp - 70) / 30);
+    const ramDev = Math.max(0, (ramUsage - 75) / 25);
+    const diskDev = Math.max(0, (diskUsage - 80) / 20);
+    const batDev = Math.max(0, (70 - batteryHealth) / 60);
+    const fanDev = fanRpm > 4000 ? Math.max(0, (fanRpm - 4000) / 2000) : (fanRpm === 0 ? 0.7 : (fanRpm < 800 ? 0.4 : 0));
+
+    const maxDev = Math.max(tempDev, ramDev, diskDev, batDev, fanDev);
+    const fallbackAnomalyScore = Math.round((0.1 + (0.89 * (1 / (1 + Math.exp(-6 * (maxDev - 0.4)))))) * 100) / 100;
+    const fallbackAnomalyAlert = fallbackAnomalyScore >= 0.75;
+
     return {
         healthScore,
         failureProbability,
@@ -179,7 +193,9 @@ const getPrediction = async (telemetry) => {
         rootCause,
         estimatedFailureWindow,
         processingLatencyMs,
-        confidenceScore
+        confidenceScore,
+        anomalyScore: fallbackAnomalyScore,
+        anomalyAlert: fallbackAnomalyAlert
     };
 };
 

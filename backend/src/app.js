@@ -6,6 +6,7 @@ const predictionRoutes = require("./routes/predictionRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const historyRoutes = require("./routes/historyRoutes");
 const streamRoutes = require("./routes/streamRoutes");
+const vendorRoutes = require("./routes/vendorRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -22,6 +23,8 @@ app.use("/api/predictions", predictionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/stream", streamRoutes);
+app.use("/api/vendor-info", vendorRoutes);
+app.use("/vendor-info", vendorRoutes);
 
 const organizationRoutes = require("./routes/organizationRoutes");
 app.use("/api/organizations", organizationRoutes);

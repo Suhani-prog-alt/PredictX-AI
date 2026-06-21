@@ -104,7 +104,7 @@ export default function Organizations({ setActiveOrgId, setView }) {
         companyName: '', orgId: '', contactEmail: '', passcode: '', 
         anonymizeDeviceIds: false, collectProcessCount: true, dataRetentionDays: 30
       });
-      fetchOrgs();
+      fetchOrganizations();
     } catch (err) {
       alert('Error creating organization. ID might already exist.');
       console.error(err);
@@ -186,7 +186,35 @@ export default function Organizations({ setActiveOrgId, setView }) {
                 </td>
               </tr>
             ) : (
-              organizations.map(org => (
+              <>
+                <tr 
+                  style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s', backgroundColor: 'rgba(255,255,255,0.02)' }}
+                  className="org-row-hover"
+                  onClick={() => {
+                    if (setActiveOrgId) setActiveOrgId('ALL');
+                    if (setView) setView('overview');
+                  }}
+                >
+                  <td style={{ padding: '16px 0', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
+                      <Building size={16} />
+                      Show All Organizations (Global View)
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px', paddingLeft: '24px' }}>
+                      Unified fleet management across all client tenants
+                    </div>
+                  </td>
+                  <td style={{ padding: '16px 0', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                    ALL
+                  </td>
+                  <td style={{ padding: '16px 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                    N/A (Bypassed)
+                  </td>
+                  <td style={{ padding: '16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    System Default
+                  </td>
+                </tr>
+                {organizations.map(org => (
                 <tr 
                   key={org._id} 
                   style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s' }}
@@ -228,6 +256,8 @@ export default function Organizations({ setActiveOrgId, setView }) {
                   </td>
                 </tr>
               ))
+              }
+              </>
             )}
           </tbody>
         </table>

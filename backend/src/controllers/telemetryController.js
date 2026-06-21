@@ -94,7 +94,9 @@ const receiveTelemetry = async (req, res) => {
             rootCause: predictionResult.rootCause,
             estimatedFailureWindow: predictionResult.estimatedFailureWindow,
             recommendation: recommendations,
-            cascadeChain: cascadeChain || []
+            cascadeChain: cascadeChain || [],
+            anomalyScore: predictionResult.anomalyScore,
+            anomalyAlert: predictionResult.anomalyAlert
         });
 
         // HACKATHON: Simulated Webhook Integration for Nagios/Zabbix/SCOM

@@ -13,7 +13,8 @@ import {
   Building,
   LogOut,
   BrainCircuit,
-  HelpCircle
+  HelpCircle,
+  Server
 } from 'lucide-react';
 
 export default function Sidebar({ currentView, setView, backendOnline, summary, isCollapsed, setIsCollapsed, onLogout, activeOrgName }) {
@@ -111,6 +112,14 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
         >
           <BrainCircuit size={18} />
           {!isCollapsed && <span>ml ops</span>}
+        </li>
+        <li 
+          className={`menu-item ${currentView === 'vendor' ? 'active' : ''}`}
+          onClick={() => setView('vendor')}
+          title="Vendor Integration"
+        >
+          <Server size={18} />
+          {!isCollapsed && <span>vendor info</span>}
         </li>
 
         {/* SYSTEM SECTION */}

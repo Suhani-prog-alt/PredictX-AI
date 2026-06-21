@@ -68,7 +68,18 @@ export default function Alerts({ devices, setView, setSelectedDeviceId }) {
     details: 'Device operating within normal parameters.'
   }));
 
-  const allAlerts = [...criticalAlerts, ...warningAlerts, ...infoAlerts.slice(0, 5)];
+  const anomalyAlerts = activeDevices.filter(d => d.latestPrediction?.anomalyAlert).map(d => ({
+    type: 'warning',
+    deviceId: d.deviceId,
+    deviceName: d.orgAssignedId ? `${d.orgAssignedId} (${d.originalHostname?.toLowerCase()})` : (d.hostname || d.deviceId),
+    component: 'Anomaly Detector',
+    score: Math.round((d.latestPrediction.anomalyScore || 0) * 100),
+    window: 'Immediate Review',
+    action: 'View Telemetry',
+    details: `Unknown Failure Pattern Detected (Isolation Forest Anomaly Score: ${d.latestPrediction.anomalyScore})`
+  }));
+
+  const allAlerts = [...criticalAlerts, ...anomalyAlerts, ...warningAlerts, ...infoAlerts.slice(0, 5)];
 
   const handleAction = (action, deviceId) => {
     if (action === 'Schedule Maintenance' || action === 'Emergency Hardware Swap') {
