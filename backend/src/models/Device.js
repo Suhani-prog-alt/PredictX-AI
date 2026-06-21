@@ -40,4 +40,8 @@ const deviceSchema = new mongoose.Schema(
     timestamps: true
 });
 
+// Add database indexes for high-scale querying
+deviceSchema.index({ orgId: 1, deviceId: 1 });
+deviceSchema.index({ 'latestPrediction.riskLevel': 1 });
+
 module.exports = mongoose.model("Device", deviceSchema);

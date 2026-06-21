@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   Menu,
   Building,
-  LogOut
+  LogOut,
+  BrainCircuit,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Sidebar({ currentView, setView, backendOnline, summary, isCollapsed, setIsCollapsed, onLogout, activeOrgName }) {
@@ -38,6 +40,9 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
       </div>
 
       <ul className="sidebar-menu">
+        
+        {/* DASHBOARD SECTION */}
+        {!isCollapsed && <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 20px 8px 20px' }}>Dashboard</div>}
         <li 
           className={`menu-item ${currentView === 'overview' ? 'active' : ''}`}
           onClick={() => setView('overview')}
@@ -47,15 +52,8 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
           {!isCollapsed && <span>overview</span>}
         </li>
 
-        <li 
-          className={`menu-item ${currentView === 'organizations' ? 'active' : ''}`}
-          onClick={() => setView('organizations')}
-          title="Organizations"
-        >
-          <Building size={18} />
-          {!isCollapsed && <span>organizations</span>}
-        </li>
-
+        {/* OPERATIONS SECTION */}
+        {!isCollapsed && <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 20px 8px 20px' }}>Operations</div>}
         <li 
           className={`menu-item ${currentView === 'alerts' ? 'active' : ''}`}
           onClick={() => setView('alerts')}
@@ -79,7 +77,6 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
             </span>
           )}
         </li>
-
         <li 
           className={`menu-item ${currentView === 'devices' ? 'active' : ''}`}
           onClick={() => setView('devices')}
@@ -88,16 +85,6 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
           <Activity size={18} />
           {!isCollapsed && <span>devices</span>}
         </li>
-
-        <li 
-          className={`menu-item ${currentView === 'predictions' ? 'active' : ''}`}
-          onClick={() => setView('predictions')}
-          title="Predictions"
-        >
-          <AlertCircle size={18} />
-          {!isCollapsed && <span>predictions</span>}
-        </li>
-
         <li 
           className={`menu-item ${currentView === 'maintenance' ? 'active' : ''}`}
           onClick={() => setView('maintenance')}
@@ -107,6 +94,35 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
           {!isCollapsed && <span>maintenance</span>}
         </li>
 
+        {/* INTELLIGENCE SECTION */}
+        {!isCollapsed && <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 20px 8px 20px' }}>Intelligence</div>}
+        <li 
+          className={`menu-item ${currentView === 'predictions' ? 'active' : ''}`}
+          onClick={() => setView('predictions')}
+          title="Predictions"
+        >
+          <AlertCircle size={18} />
+          {!isCollapsed && <span>predictions</span>}
+        </li>
+        <li 
+          className={`menu-item ${currentView === 'model' ? 'active' : ''}`}
+          onClick={() => setView('model')}
+          title="MLOps & Training"
+        >
+          <BrainCircuit size={18} />
+          {!isCollapsed && <span>ml ops</span>}
+        </li>
+
+        {/* SYSTEM SECTION */}
+        {!isCollapsed && <div style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 20px 8px 20px' }}>System</div>}
+        <li 
+          className={`menu-item ${currentView === 'health' ? 'active' : ''}`}
+          onClick={() => setView('health')}
+          title="System Health"
+        >
+          <ShieldCheck size={18} />
+          {!isCollapsed && <span>system health</span>}
+        </li>
         <li 
           className={`menu-item ${currentView === 'simulator' ? 'active' : ''}`}
           onClick={() => setView('simulator')}
@@ -115,14 +131,13 @@ export default function Sidebar({ currentView, setView, backendOnline, summary, 
           <Terminal size={18} />
           {!isCollapsed && <span>agent sim</span>}
         </li>
-
         <li 
-          className={`menu-item ${currentView === 'health' ? 'active' : ''}`}
-          onClick={() => setView('health')}
-          title="System Health"
+          className={`menu-item ${currentView === 'diagnostics' ? 'active' : ''}`}
+          onClick={() => setView('diagnostics')}
+          title="Diagnostics & Help"
         >
-          <ShieldCheck size={18} />
-          {!isCollapsed && <span>system health</span>}
+          <HelpCircle size={18} />
+          {!isCollapsed && <span>diagnostics & help</span>}
         </li>
       </ul>
 

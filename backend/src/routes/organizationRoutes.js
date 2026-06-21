@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Organization = require("../models/Organization");
+const Device = require("../models/Device");
+const Prediction = require("../models/Prediction");
 
 // GET all organizations
 router.get("/", async (req, res) => {
@@ -51,7 +53,47 @@ router.post("/verify", async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const org = await Organization.findOne({ orgId });
+        let org = await Organization.findOne({ orgId });
+        
+        // Auto-create the demo org if it doesn't exist
+        if (!org && orgId === 'dell-hackathon-2026' && passcode === 'admin123') {
+            org = await Organization.create({
+                orgId: 'dell-hackathon-2026',
+                companyName: 'Dell Hackathon Demo',
+                contactEmail: 'admin@dell-hackathon.com',
+                passcode: 'admin123',
+                privacyPolicy: {
+                    anonymizeDeviceIds: false,
+                    collectProcessCount: true,
+                    dataRetentionDays: 30
+                }
+            });
+
+            // Seed 3 mock devices for the demo
+            const mockDevices = [
+                { id: "XPS-15-FRIEND", type: "Laptop", os: "Windows 11", risk: "low", msg: "System operating normally" },
+                { id: "LATITUDE-SERVER-1", type: "Server", os: "Ubuntu 22.04", risk: "warning", msg: "High memory utilization detected" },
+                { id: "PRECISION-LAB-9", type: "Workstation", os: "Windows 10", risk: "critical", msg: "Impending thermal failure on GPU" }
+            ];
+
+            for (const d of mockDevices) {
+                await Device.create({
+                    deviceId: d.id,
+                    orgId: 'dell-hackathon-2026',
+                    deviceType: d.type,
+                    osVersion: d.os
+                });
+
+                await Prediction.create({
+                    deviceId: d.id,
+                    riskScore: d.risk === 'low' ? 12 : d.risk === 'warning' ? 65 : 92,
+                    riskLevel: d.risk,
+                    anomalies: [d.msg],
+                    recommendation: "Review system logs"
+                });
+            }
+        }
+
         if (!org) {
             return res.status(404).json({ error: "Organization not found" });
         }
@@ -60,7 +102,7 @@ router.post("/verify", async (req, res) => {
             return res.status(401).json({ error: "Invalid passcode" });
         }
 
-        res.json({ success: true, message: "Verification successful" });
+        res.json({ success: true, message: "Verification successful", org });
     } catch (err) {
         res.status(500).json({ error: "Server error verifying passcode" });
     }

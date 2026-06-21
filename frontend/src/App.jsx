@@ -8,9 +8,11 @@ import PredictionView from './components/Predictions';
 import SystemHealth from './components/SystemHealth';
 import TelemetrySimulator from './components/TelemetrySimulator';
 import MaintenanceOptimization from './components/MaintenanceOptimization';
+import Diagnostics from './components/Diagnostics';
 import Organizations from './components/Organizations';
 import OnboardingFlow from './components/OnboardingFlow';
-import { Activity, Settings, X, Building } from 'lucide-react';
+import ModelTraining from './components/ModelTraining';
+import { Activity, Settings, X, Building, BrainCircuit } from 'lucide-react';
 
 function App() {
   const [currentView, setView] = useState('overview');
@@ -177,6 +179,8 @@ function App() {
         return 'platform & ml health';
       case 'organizations':
         return 'tenant management';
+      case 'diagnostics':
+        return 'interactive diagnostics';
       default:
         return 'predictx dashboard';
     }
@@ -239,7 +243,10 @@ function App() {
           </div>
           
           <div className="header-actions">
-            {/* The activeOrgName is now shown in the Sidebar instead of here, but we can keep the header badge or remove it. The user said 'at the place of api connected, write organization name', so I'll remove it from header. */}
+            <button className="btn btn-secondary" onClick={() => setView('organizations')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', border: '1px solid var(--border-color)', background: 'var(--bg-lighter)', color: 'var(--text-primary)', borderRadius: '6px', cursor: 'pointer' }}>
+              <Building size={16} />
+              Organizations
+            </button>
           </div>
         </header>
 
@@ -292,12 +299,17 @@ function App() {
               <SystemHealth backendOnline={backendOnline} />
             )}
 
+            {currentView === 'diagnostics' && (
+              <Diagnostics apiUrl={apiUrl} />
+            )}
+
             {currentView === 'organizations' && (
               <Organizations 
                 setActiveOrgId={setActiveOrgId} 
                 setView={setView} 
               />
             )}
+            {currentView === 'model' && <ModelTraining apiUrl={apiUrl} />}
           </>
         )}
       </main>

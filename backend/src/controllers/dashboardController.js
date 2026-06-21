@@ -1,6 +1,8 @@
 const Device = require("../models/Device");
 const Telemetry = require("../models/Telemetry");
 const Prediction = require("../models/Prediction");
+const mongoose = require("mongoose");
+const axios = require("axios");
 
 // GET /api/dashboard/summary - overall system summary
 const getDashboardSummary = async (req, res) => {
@@ -129,10 +131,59 @@ const resolveDeviceAlert = async (req, res) => {
     }
 };
 
+// GET /api/dashboard/diagnostics - Run live system health checks
+const runDiagnostics = async (req, res) => {
+    try {
+        const diagnostics = {
+            backend: { status: 'ok', latency: 0 },
+            database: { status: 'checking', latency: 0 },
+            ml_api: { status: 'checking', latency: 0 },
+            telemetry: { status: 'checking', latency: 0 }
+        };
+
+        // 1. Backend is running since we are inside this route
+        diagnostics.backend = { status: 'ok', message: 'Node.js server is online' };
+
+        // 2. Database check
+        const dbStart = Date.now();
+        const dbState = mongoose.connection.readyState;
+        if (dbState === 1) {
+            // ping query to measure latency
+            await Device.findOne().lean();
+            diagnostics.database = { status: 'ok', latency: Date.now() - dbStart, message: 'MongoDB connected' };
+        } else {
+            diagnostics.database = { status: 'error', message: 'MongoDB disconnected' };
+        }
+
+        // 3. ML API check
+        const mlStart = Date.now();
+        try {
+            await axios.get('http://localhost:8000/');
+            diagnostics.ml_api = { status: 'ok', latency: Date.now() - mlStart, message: 'FastAPI ML Engine online' };
+        } catch (err) {
+            diagnostics.ml_api = { status: 'error', message: 'ML API unreachable (Port 8000)' };
+        }
+
+        // 4. Telemetry check (did we receive anything in the last 60 seconds?)
+        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+        const recentTelemetry = await Telemetry.exists({ createdAt: { $gte: oneMinuteAgo } });
+        if (recentTelemetry) {
+            diagnostics.telemetry = { status: 'ok', message: 'Live data stream active' };
+        } else {
+            diagnostics.telemetry = { status: 'warning', message: 'No telemetry received in last 60s' };
+        }
+
+        res.json(diagnostics);
+    } catch (err) {
+        res.status(500).json({ error: "Diagnostics failed", details: err.message });
+    }
+};
+
 module.exports = {
     getDashboardSummary,
     getAllDevicesStatus,
     getDeviceDetail,
     streamUpdates,
-    resolveDeviceAlert
+    resolveDeviceAlert,
+    runDiagnostics
 };

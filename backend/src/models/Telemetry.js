@@ -40,6 +40,9 @@ const telemetrySchema = new mongoose.Schema({
         default: Date.now
     }
 
-});
+}, { timestamps: true });
+
+// Time-series optimization for 10k+ device scaling
+telemetrySchema.index({ deviceId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Telemetry", telemetrySchema);
