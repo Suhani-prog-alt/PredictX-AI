@@ -27,19 +27,20 @@ Ensure MongoDB is running locally on port `27017` or update the connection strin
 ### 2. Machine Learning Inference API (Python)
 The ML API evaluates telemetry payloads against the pre-trained XGBoost model.
 ```bash
-cd model_inference
 python -m venv venv
 # Windows: venv\Scripts\activate
 # Mac/Linux: source venv/bin/activate
 pip install -r requirements.txt
-python api.py
+cd model_inference
+uvicorn api:app --reload
 ```
 *Runs on `http://localhost:8000`*
 
 #### Federated Learning Proof-of-Concept
 To run the standalone Federated Learning simulation (which proves multi-org model training while preserving data privacy):
 ```bash
-python model_inference/federated_learning_poc.py
+cd model_inference
+python federated_learning_poc.py
 ```
 
 ### 3. Backend (Node.js)
