@@ -22,11 +22,30 @@ const getDashboardSummary = async (req, res) => {
         const warningDevices = latestPredictions.filter(p => p.riskLevel === "warning").length;
         const healthyDevices = latestPredictions.filter(p => p.riskLevel === "low").length;
 
+        // Aggregate Top AI Drivers from explainableReasons
+        const reasonCounts = {};
+        latestPredictions.forEach(p => {
+            if (p.riskLevel !== "low" && p.explainableReasons && Array.isArray(p.explainableReasons)) {
+                p.explainableReasons.forEach(reason => {
+                    // Extract the core reason, e.g., "Battery Degradation" from "Battery Degradation (+11.8% risk factor)"
+                    const cleanReason = reason.split(' (+')[0].trim();
+                    reasonCounts[cleanReason] = (reasonCounts[cleanReason] || 0) + 1;
+                });
+            }
+        });
+
+        // Convert to array and sort by count descending
+        const topAiDrivers = Object.entries(reasonCounts)
+            .map(([reason, count]) => ({ reason, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // Get top 5
+
         res.status(200).json({
             totalDevices,
             criticalDevices,
             warningDevices,
-            healthyDevices
+            healthyDevices,
+            topAiDrivers
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

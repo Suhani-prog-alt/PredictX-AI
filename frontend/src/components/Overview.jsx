@@ -352,6 +352,36 @@ export default function Overview({ summary, devices, setView, setSelectedDeviceI
         </div>
       </div>
 
+      {/* Fleet-Wide AI Drivers (SHAP) */}
+      {summary?.topAiDrivers && summary.topAiDrivers.length > 0 && (
+        <div className="glass-card" style={{ marginBottom: '24px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+          <div className="chart-header" style={{ marginBottom: '16px' }}>
+            <h2>fleet-wide ai drivers</h2>
+            <Activity size={18} color="#8b5cf6" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {summary.topAiDrivers.map((driver, idx) => {
+              const maxCount = summary.topAiDrivers[0].count;
+              const percentage = Math.min(100, Math.round((driver.count / maxCount) * 100));
+              return (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    <span style={{ textTransform: 'lowercase' }}>{driver.reason}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{driver.count} device{driver.count !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.5), #8b5cf6)', borderRadius: '3px', transition: 'width 1s ease-out' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '16px', lineHeight: '1.4', fontStyle: 'italic', textTransform: 'none' }}>
+            "Explainable AI (SHAP) aggregates the top hardware anomalies driving failure predictions across your entire fleet, enabling targeted mass-remediation."
+          </p>
+        </div>
+      )}
+
       {/* Main Layout Grid */}
       <div className="dashboard-layout" style={{ gridTemplateColumns: '2.2fr 1fr' }}>
         {/* Charts Sub-grid */}

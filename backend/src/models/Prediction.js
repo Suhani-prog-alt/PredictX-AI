@@ -21,6 +21,8 @@ const predictionSchema = new mongoose.Schema({
 
     recommendation: [String],
 
+    explainableReasons: [String],
+
     anomalyScore: Number,
 
     anomalyAlert: Boolean,

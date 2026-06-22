@@ -8,6 +8,7 @@ import warnings
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
+import shap
 
 warnings.filterwarnings('ignore')
 
@@ -21,8 +22,10 @@ app = FastAPI(
 try:
     model = joblib.load('../model_artifacts/xgb_telemetry_model.joblib')
     model_cols = joblib.load('../model_artifacts/telemetry_feature_columns.joblib')
+    explainer = shap.TreeExplainer(model)
 except Exception as e:
     print(f"Error loading ML model on boot: {e}")
+    explainer = None
 
 class TelemetryPayload(BaseModel):
     device_name: Optional[str] = "Unknown Dell Device"
@@ -180,6 +183,46 @@ def predict_hardware_health(payload: TelemetryPayload):
         is_lagging = True
         lag_reason = "RAM Thrashing (Paging to Disk)"
 
+    # Explainable AI: SHAP Reasons
+    shap_reasons = []
+    if explainer and fail_prob > 0.15:
+        try:
+            shap_vals = explainer.shap_values(df_input)
+            # shap_vals is typically an array of shape (1, num_features)
+            # Find the top 3 positive contributors pushing toward failure
+            vals = shap_vals[0] if len(shap_vals.shape) > 1 else shap_vals
+            feature_contributions = list(zip(model_cols, vals))
+            # Sort by contribution value descending (only keep positive contributors)
+            positive_contributors = sorted([f for f in feature_contributions if f[1] > 0], key=lambda x: x[1], reverse=True)
+            
+            # Map technical column names to readable strings
+            readable_names = {
+                'cpuTemp': 'High CPU Temperature',
+                'diskReadSpeed': 'Elevated Disk Read Activity',
+                'diskWriteSpeed': 'Elevated Disk Write Activity',
+                'cpuUsage': 'High CPU Utilization',
+                'ramUsage': 'High RAM Utilization',
+                'batteryHealth': 'Battery Degradation',
+                'diskUsage': 'Low Disk Space',
+                'processCount': 'High Process Count',
+                'smartHealth': 'Low S.M.A.R.T Health Score',
+                'gpuUsage': 'High GPU Load',
+                'gpuTemp': 'High GPU Temperature',
+                'cpu_gpu_load_ratio': 'CPU-GPU Load Imbalance',
+                'temp_power_ratio_cpu': 'Inefficient Power-to-Temp Ratio',
+                'disk_activity_score': 'Intensive Disk I/O Thrashing'
+            }
+            
+            for feat, val in positive_contributors[:3]:
+                name = readable_names.get(feat, feat)
+                shap_reasons.append(f"{name} (+{round(val*100, 1)}% risk factor)")
+        except Exception as e:
+            print(f"SHAP explanation failed: {e}")
+            pass
+        
+    if not shap_reasons and risk_level != "Low":
+        shap_reasons.append("Model detected generic degradation patterns.")
+
     # 4. Return API Response
     return {
         "status": "success",
@@ -202,7 +245,8 @@ def predict_hardware_health(payload: TelemetryPayload):
             "estimated_failure_window": days_to_fail,
             "system_lagging": is_lagging,
             "lag_reason": lag_reason,
-            "recommendation": recommendation
+            "recommendation": recommendation,
+            "shap_reasons": shap_reasons
         }
     }
 

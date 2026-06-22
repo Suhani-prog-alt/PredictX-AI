@@ -195,6 +195,7 @@ function App() {
     criticalDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'critical').length,
     warningDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'warning').length,
     healthyDevices: filteredDevices.filter(d => d.latestPrediction?.riskLevel === 'low').length,
+    topAiDrivers: summary?.topAiDrivers || []
   };
 
   const handleSelectDevice = (deviceId) => {
