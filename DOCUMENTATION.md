@@ -18,6 +18,7 @@ predicts failure probability, and displays everything on a live dashboard.
 | Telemetry Agent (Python) | Shinjineedheer036 |
 | ML Model + FastAPI | Suhani |
 | Federated Learning PoC | Suhani |
+| Dell iDRAC Integration | Dhriti |
 
 ---
 
@@ -105,7 +106,7 @@ python agent.py
 
 **Language:** Node.js + Express  
 **Database:** MongoDB (Mongoose)  
-**Who built it:** Dhriti
+**Who built it:** Kritika & Dhriti
 
 ### Server Setup:
 - `server.js` — starts Express server on PORT (default 5000), connects MongoDB
@@ -189,7 +190,7 @@ npm run dev
 
 **Language:** Python + FastAPI  
 **Model:** XGBoost (trained on telemetry + Backblaze + AI4I datasets)  
-**Who built it:** ML teammate
+**Who built it:** Suhani
 
 ### What it does:
 Receives telemetry data, runs it through a trained XGBoost classifier, and returns a prediction.
@@ -254,7 +255,7 @@ python api.py
 
 **Language:** React + Vite  
 **Libraries:** Chart.js, react-chartjs-2, Lucide Icons  
-**Who built it:** Dhriti + frontend teammate
+**Who built it:** Palak & Dhriti
 
 ### Pages / Views:
 
@@ -313,7 +314,7 @@ Frontend connects to `GET /api/dashboard/stream` (SSE) and receives live pushes 
 
 **Language:** React Native + Expo  
 **Libraries:** React Navigation (Drawer/Tabs), Axios  
-**Who built it:** Dhriti + frontend teammate
+**Who built it:** Suhani
 
 ### Pages / Views:
 
@@ -415,7 +416,7 @@ ML API runs at: `http://localhost:8000`
 ## Module 5 — Dell OpenManage Vendor Integration (`/vendor-info`)
 
 **Language:** Node.js (Backend) + React (Frontend)  
-**Who built it:** Dhriti / Antigravity
+**Who built it:** Dhriti
 
 ### What it does:
 Integrates hardware asset records, contract databases, and firmware versions from Dell OpenManage / iDRAC systems. It displays connection logs and alerts administrators when support warranties are expiring.
@@ -452,7 +453,7 @@ Fetches Dell OpenManage asset inventory and support contracts.
 ## Module 6 — Privacy-Preserving Federated Learning (`federated_learning_poc.py`)
 
 **Language:** Python + XGBoost + Scikit-Learn  
-**Who built it:** Antigravity / Team
+**Who built it:** Suhani
 
 ### What it does:
 Demonstrates that the PredictX-AI prediction model can be trained collaboratively across isolated organizations without exposing any raw telemetry data. It splits the `ai4i2020` dataset into isolated silos, trains independent local models, and then mathematically merges them at a central server.
