@@ -80,3 +80,21 @@ This project satisfies all critical acceptance criteria:
 - **Scalability**: Database schemas optimized with compound indexing (`orgId`, `deviceId`, `timestamp`) to easily support >10,000 concurrent devices.
 - **Accuracy**: Designed for ≥90% prediction accuracy utilizing a highly tuned XGBoost Random Forest.
 - **Latency**: End-to-end telemetry streaming to UI takes <5 seconds using fast REST ingestion and Server-Sent Events (SSE).
+
+## Dataset References
+The following datasets were used for model training and evaluation:
+- **AI4I 2020 Predictive Maintenance Dataset**
+    Source: UCI Machine Learning Repository
+    Purpose: Machine failure prediction using operational parameters.
+- **Backblaze Hard Drive Dataset**
+    Source: Backblaze Drive Stats
+    Purpose: Storage device failure prediction using SMART attributes.
+- **Synthetic App Telemetry Data**
+    Source: Custom synthetic telemetry dataset published on Kaggle by the authors.
+    Purpose: Simulating real-time application and device telemetry data for training and testing predictive failure models.
+
+[1] A. Matzka, "AI4I 2020 Predictive Maintenance Dataset," UCI Machine Learning Repository, 2020.
+
+[2] Backblaze, "Hard Drive Test Data and Statistics Dataset," Backblaze Drive Stats.
+
+[3] S. S. Sikarwar, "Synthetic App Telemetry Data," Kaggle, 2026. Available: https://www.kaggle.com/datasets/suhanisinghsikarwar/synthetic-app-telemetry-data
