@@ -18,6 +18,7 @@ predicts failure probability, and displays everything on a live dashboard.
 | Telemetry Agent (Python) | Shinjineedheer036 |
 | ML Model + FastAPI | Suhani |
 | Federated Learning PoC | Suhani |
+| Dell iDRAC Integration | Dhriti |
 
 ---
 
