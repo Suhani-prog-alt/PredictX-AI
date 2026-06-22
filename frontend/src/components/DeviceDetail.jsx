@@ -496,62 +496,6 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
               <span style={{ textTransform: 'lowercase' }}>{device.os}</span>
             </div>
           </div>
-        </div>
-
-        {/* Right Side: Health Insights and Analytics */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Health Insight Summary */}
-          {latestPrediction && (
-            <div className={`glass-card ${risk !== 'low' ? 'rec-box ' + risk : ''}`} style={{ margin: 0, padding: '24px' }}>
-              <div className="rec-title" style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  {risk === 'critical' ? <AlertTriangle size={18} /> : risk === 'warning' ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
-                  <span style={{ textTransform: 'lowercase' }}>
-                    ml_assessment :: {risk === 'critical' ? 'urgent_failure_risk' : risk === 'warning' ? (latestPrediction?.healthScore > 40 ? 'moderate_performance_degradation' : 'degraded_performance_warning') : 'system_healthy'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', gap: '12px' }}>
-                  {latestPrediction?.processingLatencyMs && <span>⏱️ latency: {latestPrediction.processingLatencyMs}ms</span>}
-                  {latestPrediction?.confidenceScore && <span>🎯 confidence: {latestPrediction.confidenceScore}%</span>}
-                </div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '6px', marginBottom: '16px', borderLeft: '2px solid var(--color-primary)' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', fontWeight: 'bold' }}>
-                  <HelpCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                  explainable_ai_insight
-                </p>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '8px', textTransform: 'lowercase', lineHeight: '1.4' }}>
-                  root_cause: <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{latestPrediction.rootCause?.toLowerCase() || 'no issues detected.'}</span>
-                </p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'none', fontStyle: 'italic', lineHeight: '1.4' }}>
-                  "Risk score of {latestPrediction.healthScore} generated due to {latestPrediction.rootCause?.toLowerCase() || 'normal operational patterns'}. The ML model detected anomalous telemetry correlated with {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' ? latestPrediction.predictedComponent.toLowerCase() : 'system'} degradation."
-                </p>
-              </div>
-              {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' && (
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'lowercase' }}>
-                  component: <span style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 'bold' }}>{latestPrediction.predictedComponent.toLowerCase()}</span>
-                </p>
-              )}
-              {latestPrediction.recommendation && latestPrediction.recommendation.length > 0 && (
-                <div>
-                   <h4 style={{ fontSize: '0.85rem', textTransform: 'lowercase', color: 'var(--text-secondary)', marginBottom: '10px', letterSpacing: '0.5px' }}>action_recommendations:</h4>
-                  <ul className="rec-list">
-                    {latestPrediction.recommendation.map((rec, idx) => (
-                      <li key={idx} className="rec-item">
-                        <input 
-                          type="checkbox" 
-                          checked={risk === 'low' || resolvedCheckboxes.has(idx)}
-                          onChange={(e) => handleRecommendationCheck(idx, e.target.checked)}
-                          disabled={risk === 'low'}
-                        />
-                        <span style={{ textTransform: 'lowercase' }}>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Advanced Analytics Card */}
           {latestPrediction && latestPrediction.anomalyScore !== undefined && (
@@ -602,6 +546,76 @@ export default function DeviceDetail({ deviceId, onBack, apiUrl, latestUpdate })
               </p>
             </div>
           )}
+        </div>
+
+        {/* Right Side: Health Insights and Analytics */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Health Insight Summary */}
+          {latestPrediction && (
+            <div className={`glass-card ${risk !== 'low' ? 'rec-box ' + risk : ''}`} style={{ margin: 0, padding: '24px' }}>
+              <div className="rec-title" style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  {risk === 'critical' ? <AlertTriangle size={18} /> : risk === 'warning' ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
+                  <span style={{ textTransform: 'lowercase' }}>
+                    ml_assessment :: {risk === 'critical' ? 'urgent_failure_risk' : risk === 'warning' ? (latestPrediction?.healthScore > 40 ? 'moderate_performance_degradation' : 'degraded_performance_warning') : 'system_healthy'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', gap: '12px' }}>
+                  {latestPrediction?.processingLatencyMs && <span>⏱️ latency: {latestPrediction.processingLatencyMs}ms</span>}
+                  {latestPrediction?.confidenceScore && <span>🎯 confidence: {latestPrediction.confidenceScore}%</span>}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '6px', marginBottom: '16px', borderLeft: '2px solid var(--color-primary)' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', fontWeight: 'bold' }}>
+                  <HelpCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
+                  explainable_ai_insight
+                </p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '8px', textTransform: 'lowercase', lineHeight: '1.4' }}>
+                  root_cause: <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{latestPrediction.rootCause?.toLowerCase() || 'no issues detected.'}</span>
+                </p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'none', fontStyle: 'italic', lineHeight: '1.4' }}>
+                  "Risk score of {latestPrediction.healthScore} generated due to {latestPrediction.rootCause?.toLowerCase() || 'normal operational patterns'}. The ML model detected anomalous telemetry correlated with {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' ? latestPrediction.predictedComponent.toLowerCase() : 'system'} degradation."
+                </p>
+                {latestPrediction.explainableReasons && latestPrediction.explainableReasons.length > 0 && (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 'bold' }}>
+                      shap_model_drivers:
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: '16px', color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                      {latestPrediction.explainableReasons.map((reason, idx) => (
+                        <li key={idx} style={{ marginBottom: '4px' }}>{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {latestPrediction.predictedComponent && latestPrediction.predictedComponent !== 'None' && (
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'lowercase' }}>
+                  component: <span style={{ color: risk === 'critical' ? 'var(--color-danger)' : risk === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 'bold' }}>{latestPrediction.predictedComponent.toLowerCase()}</span>
+                </p>
+              )}
+              {latestPrediction.recommendation && latestPrediction.recommendation.length > 0 && (
+                <div>
+                   <h4 style={{ fontSize: '0.85rem', textTransform: 'lowercase', color: 'var(--text-secondary)', marginBottom: '10px', letterSpacing: '0.5px' }}>action_recommendations:</h4>
+                  <ul className="rec-list">
+                    {latestPrediction.recommendation.map((rec, idx) => (
+                      <li key={idx} className="rec-item">
+                        <input 
+                          type="checkbox" 
+                          checked={risk === 'low' || resolvedCheckboxes.has(idx)}
+                          onChange={(e) => handleRecommendationCheck(idx, e.target.checked)}
+                          disabled={risk === 'low'}
+                        />
+                        <span style={{ textTransform: 'lowercase' }}>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+
 
           {/* Current Telemetry Widgets */}
           <div className="glass-card">

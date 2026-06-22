@@ -606,6 +606,7 @@ a {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
   gap: 32px;
+  margin-bottom: 24px;
 }
 
 @media (max-width: 950px) {

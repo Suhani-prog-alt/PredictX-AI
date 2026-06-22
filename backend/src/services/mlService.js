@@ -68,7 +68,8 @@ const getPrediction = async (telemetry) => {
                 processingLatencyMs,
                 confidenceScore,
                 anomalyScore: diag.anomaly_score !== undefined ? diag.anomaly_score : 0.0,
-                anomalyAlert: !!diag.anomaly_alert
+                anomalyAlert: !!diag.anomaly_alert,
+                explainableReasons: diag.shap_reasons || []
             };
         }
     } catch (error) {
@@ -195,7 +196,8 @@ const getPrediction = async (telemetry) => {
         processingLatencyMs,
         confidenceScore,
         anomalyScore: fallbackAnomalyScore,
-        anomalyAlert: fallbackAnomalyAlert
+        anomalyAlert: fallbackAnomalyAlert,
+        explainableReasons: riskLevel === "low" ? [] : [rootCauseMap[worst.name] || "Subsystem showing elevated risk"]
     };
 };
 
