@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, ScrollView, RefreshControl } from 'react-native';
 import { fetchTelemetry } from '../services/api';
+import DeviceHealthWidget from '../components/DeviceHealthWidget';
+import FailureDistributionWidget from '../components/FailureDistributionWidget';
+import SystemAlertsWidget from '../components/SystemAlertsWidget';
 
 export default function OverviewScreen({ navigation }) {
   const [devices, setDevices] = useState([]);
@@ -35,8 +38,8 @@ export default function OverviewScreen({ navigation }) {
     alert("Simulation injected! Switch to the Devices tab to see it.");
   };
 
-  const criticalCount = devices.filter(d => d.prediction?.riskLevel === 'Critical').length;
-  const warningCount = devices.filter(d => d.prediction?.riskLevel === 'Warning').length;
+  const criticalCount = devices.filter(d => (d.latestPrediction || d.prediction)?.riskLevel === 'Critical').length;
+  const warningCount = devices.filter(d => (d.latestPrediction || d.prediction)?.riskLevel === 'Warning').length;
   const stableCount = devices.length - criticalCount - warningCount;
 
   if (loading && !refreshing) {
@@ -76,6 +79,11 @@ export default function OverviewScreen({ navigation }) {
           </View>
         </View>
       </View>
+
+      {/* New Dashboard Widgets */}
+      <DeviceHealthWidget healthy={stableCount} warning={warningCount} critical={criticalCount} />
+      <FailureDistributionWidget devices={devices} />
+      <SystemAlertsWidget devices={devices} navigation={navigation} />
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>System Activity</Text>

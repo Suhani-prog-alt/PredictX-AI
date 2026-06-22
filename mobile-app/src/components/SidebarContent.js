@@ -51,7 +51,7 @@ export default function SidebarContent({ navigation, state }) {
 
         {/* OPERATIONS */}
         <Text style={styles.sectionTitle}>OPERATIONS</Text>
-        {renderNavItem('alerts', 'alerts', '🔔', 7)}
+        {renderNavItem('alerts', 'alerts', '🔔', 3)}
         {renderNavItem('devices', 'devices', '📉')}
         {renderNavItem('maintenance', 'overview', '🔧')}
 
@@ -59,11 +59,11 @@ export default function SidebarContent({ navigation, state }) {
         <Text style={styles.sectionTitle}>INTELLIGENCE</Text>
         {renderNavItem('predictions', 'overview', '❕')}
         {renderNavItem('ml ops', 'overview', '🧠')}
+        {renderNavItem('vendor info', 'overview', '🗄️')}
 
         {/* SYSTEM */}
         <Text style={styles.sectionTitle}>SYSTEM</Text>
         {renderNavItem('system health', 'overview', '🛡️')}
-        {renderNavItem('agent sim', 'overview', '›')}
 
       </View>
 
